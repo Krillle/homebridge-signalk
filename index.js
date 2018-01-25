@@ -30,7 +30,7 @@ EmpirBusSwitch.prototype = {
         me.log(error.message);
         return next(error);
       }
-      me.log ('Switch Status_ ' + body.status);
+      me.log ('Switch Status: ' + body.status);
       return next(null, body.status);
     });
   },
