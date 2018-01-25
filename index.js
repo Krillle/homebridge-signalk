@@ -1,5 +1,5 @@
-const request = require('request');
-const url = require('url');
+var request = require('request');
+var url = require('url');
 
 var Service, Characteristic;
  
