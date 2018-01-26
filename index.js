@@ -36,7 +36,7 @@ function SignalKPlatform(log, config, api) {
 // Autodetect from API all Dimmers, Switches 
 
 SignalKPlatform.prototype.accessories = function(callback) {
-log("prototype.accessories");
+console.log("prototype.accessories");
   this.url = this.config.url
   if ( this.url.charAt(this.url.length-1) != '/' )   // Append "/" to URL if missing
     this.url = this.url + '/'
@@ -71,7 +71,7 @@ log("prototype.accessories");
 
 
 function SignalKAccessory(log, url, config, name) {
-log("SignalKAccessory");
+console.log("SignalKAccessory");
   this.log = log;
   this.name = name;
   this.config = config;
@@ -82,7 +82,7 @@ log("SignalKAccessory");
 // - - - - - - - Helper functions - - - - - - -
 
 SignalKAccessory.prototype.autoDetect = function(url, callback) {
-log("Autodetect");
+console.log("Autodetect");
   request(url,
           (error, response, body) => {
             if ( error ) {
@@ -108,7 +108,7 @@ SignalKAccessory.prototype.getName = function(path, defaultName) {
 
 // Lookup full API Keys tree for HomeKit suitable devices
 SignalKAccessory.prototype.processFullTree = function(body, callback) {
-  log("Processing Tree Start");
+  console.log("Processing Tree Start");
   log(body);
   
   var tree = JSON.parse(body);
