@@ -1,5 +1,9 @@
+const _ = require('lodash');
+var request = require('request');
 var http = require('http');
-var Accessory, Service, Characteristic, UUIDGen;
+var url = require('url');
+
+var Accessory, Service, Characteristic, UUIDGen; 
 
 module.exports = function(homebridge) {
   console.log("homebridge API version: " + homebridge.version);
@@ -25,194 +29,104 @@ function SignalKPlatform(log, config, api) {
   var platform = this;
   this.log = log;
   this.config = config;
-  this.accessories = [];
-
-  this.requestServer = http.createServer(function(request, response) {
-    if (request.url === "/add") {
-      this.addAccessory(new Date().toISOString());
-      response.writeHead(204);
-      response.end();
-    }
-
-    if (request.url == "/reachability") {
-      this.updateAccessoriesReachability();
-      response.writeHead(204);
-      response.end();
-    }
-
-    if (request.url == "/remove") {
-      this.removeAccessory();
-      response.writeHead(204);
-      response.end();
-    }
-  }.bind(this));
-
-  this.requestServer.listen(18081, function() {
-    platform.log("Server Listening...");
-  });
-
-  if (api) {
-      // Save the API object as plugin needs to register new accessory via this object
-      this.api = api;
-
-      // Listen to event "didFinishLaunching", this means homebridge already finished loading cached accessories.
-      // Platform Plugin should only register new accessory that doesn't exist in homebridge after this event.
-      // Or start discover new accessories.
-      this.api.on('didFinishLaunching', function() {
-        platform.log("DidFinishLaunching");
-      }.bind(this));
-  }
 }
 
-// Function invoked when homebridge tries to restore cached accessory.
-// Developer can configure accessory at here (like setup event handler).
-// Update current value.
-SignalKPlatform.prototype.configureAccessory = function(accessory) {
-  this.log(accessory.displayName, "Configure Accessory");
-  var platform = this;
+//
+// Accessories definition
+// Autodetect from API all Dimmers, Switches 
 
-  // Set the accessory to reachable if plugin can currently process the accessory,
-  // otherwise set to false and update the reachability later by invoking 
-  // accessory.updateReachability()
-  accessory.reachable = true;
+SignalKPlatform.prototype.accessories = function(callback) {
+log("prototype.accessories");
+  this.url = this.config.url
+  if ( this.url.charAt(this.url.length-1) != '/' )   // Append "/" to URL if missing
+    this.url = this.url + '/'
+    
+  var informationService = new Service.AccessoryInformation();
+  //  informationService
+  //  .setCharacteristic(Characteristic.Manufacturer, "Linskens")
+  //  .setCharacteristic(Characteristic.Model, "Catfish 46")
+  //  .setCharacteristic(Characteristic.SerialNumber, 'NL-GLW46003E212');	
 
-  accessory.on('identify', function(paired, callback) {
-    platform.log(accessory.displayName, "Identify!!!");
-    callback();
+  //  Supposed to be characteristic of each single accessory. 
+  //  FIXME: Especially SerialNumber supposed to be UUID 
+  informationService
+    .setCharacteristic(Characteristic.Manufacturer, "EmpirBus")
+    .setCharacteristic(Characteristic.Model, "DCU")
+    .setCharacteristic(Characteristic.SerialNumber, 'GLW46003E212');	
+    
+
+  var dimmer = new SignalKAccessory(this.log, this.url, this.config, "Noname")
+ 
+  dimmer.autoDetect(this.url, (error, services) => {
+    if ( error ) {
+      this.log(`error: ${error}`);
+      callback([]);
+    } else {
+      services.push(informationService);
+      dimmer.services = services;
+      callback([dimmer])
+    }
   });
+}
 
-  if (accessory.getService(Service.Lightbulb)) {
-    accessory.getService(Service.Lightbulb)
-    .getCharacteristic(Characteristic.On)
-    .on('set', function(value, callback) {
-      platform.log(accessory.displayName, "Light -> " + value);
-      callback();
+
+function SignalKAccessory(log, url, config, name) {
+log("SignalKAccessory");
+  this.log = log;
+  this.name = name;
+  this.config = config;
+  this.url = url;
+
+}
+
+// - - - - - - - Helper functions - - - - - - -
+
+SignalKAccessory.prototype.autoDetect = function(url, callback) {
+log("Autodetect");
+  request(url,
+          (error, response, body) => {
+            if ( error ) {
+              callback(error);
+            } else if ( response.statusCode != 200 ) {
+              callback(new Error(`response code ${response.statusCode}`))
+            } else {
+              this.processFullTree(body, callback);
+            }
+          })
+}
+
+
+SignalKAccessory.prototype.checkPath = function(path) {
+  return this.config.ignoredPaths.indexOf(path) == -1
+}
+
+
+SignalKAccessory.prototype.getName = function(path, defaultName) {
+  return (this.config.displayNames && this.config.displayNames[path]) || defaultName
+}
+
+
+// Lookup full API Keys tree for HomeKit suitable devices
+SignalKAccessory.prototype.processFullTree = function(body, callback) {
+  log("Processing Tree Start");
+  log(body);
+  
+  var tree = JSON.parse(body);
+  var services = []
+
+  var switches = _.get(tree, 'electrical.empirBusNxt');
+  log("Switches")
+  log(switches);
+  if ( switches ) {
+    _.keys(switches).forEach(instance => {
+      _.keys(switches[instance]).forEach(element => {
+        var path = `electrical.empirBusNxt.${instance}.switches.${element}`;
+        var displayName = this.getName(path, `Component ${instance} Switch ${element}`)
+//        services.push(this.addSwitchService(displayName, `${instance}.${element}`, path))
+log (this.addSwitchService(displayName, `${instance}.${element}`, path))
+      })
     });
   }
-
-  this.accessories.push(accessory);
+  callback(null, services.filter(service => service != null))
 }
 
-// Handler will be invoked when user try to config your plugin.
-// Callback can be cached and invoke when necessary.
-SignalKPlatform.prototype.configurationRequestHandler = function(context, request, callback) {
-  this.log("Context: ", JSON.stringify(context));
-  this.log("Request: ", JSON.stringify(request));
-
-  // Check the request response
-  if (request && request.response && request.response.inputs && request.response.inputs.name) {
-    this.addAccessory(request.response.inputs.name);
-
-    // Invoke callback with config will let homebridge save the new config into config.json
-    // Callback = function(response, type, replace, config)
-    // set "type" to platform if the plugin is trying to modify platforms section
-    // set "replace" to true will let homebridge replace existing config in config.json
-    // "config" is the data platform trying to save
-    callback(null, "platform", true, {"platform":"SignalK", "otherConfig":"SomeData"});
-    return;
-  }
-
-  // - UI Type: Input
-  // Can be used to request input from user
-  // User response can be retrieved from request.response.inputs next time
-  // when configurationRequestHandler being invoked
-
-  var respDict = {
-    "type": "Interface",
-    "interface": "input",
-    "title": "Add Accessory",
-    "items": [
-      {
-        "id": "name",
-        "title": "Name",
-        "placeholder": "Fancy Light"
-      }//, 
-      // {
-      //   "id": "pw",
-      //   "title": "Password",
-      //   "secure": true
-      // }
-    ]
-  }
-
-  // - UI Type: List
-  // Can be used to ask user to select something from the list
-  // User response can be retrieved from request.response.selections next time
-  // when configurationRequestHandler being invoked
-
-  // var respDict = {
-  //   "type": "Interface",
-  //   "interface": "list",
-  //   "title": "Select Something",
-  //   "allowMultipleSelection": true,
-  //   "items": [
-  //     "A","B","C"
-  //   ]
-  // }
-
-  // - UI Type: Instruction
-  // Can be used to ask user to do something (other than text input)
-  // Hero image is base64 encoded image data. Not really sure the maximum length HomeKit allows.
-
-  // var respDict = {
-  //   "type": "Interface",
-  //   "interface": "instruction",
-  //   "title": "Almost There",
-  //   "detail": "Please press the button on the bridge to finish the setup.",
-  //   "heroImage": "base64 image data",
-  //   "showActivityIndicator": true,
-  // "showNextButton": true,
-  // "buttonText": "Login in browser",
-  // "actionURL": "https://google.com"
-  // }
-
-  // Plugin can set context to allow it track setup process
-  context.ts = "Hello";
-
-  // Invoke callback to update setup UI
-  callback(respDict);
-}
-
-// Sample function to show how developer can add accessory dynamically from outside event
-SignalKPlatform.prototype.addAccessory = function(accessoryName) {
-  this.log("Add Accessory");
-  var platform = this;
-  var uuid;
-
-  uuid = UUIDGen.generate(accessoryName);
-
-  var newAccessory = new Accessory(accessoryName, uuid);
-  newAccessory.on('identify', function(paired, callback) {
-    platform.log(accessory.displayName, "Identify!!!");
-    callback();
-  });
-  // Plugin can save context on accessory to help restore accessory in configureAccessory()
-  // newAccessory.context.something = "Something"
-  
-  // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
-  newAccessory.addService(Service.Lightbulb, "Test Light")
-  .getCharacteristic(Characteristic.On)
-  .on('set', function(value, callback) {
-    platform.log(accessory.displayName, "Light -> " + value);
-    callback();
-  });
-
-  this.accessories.push(newAccessory);
-  this.api.registerPlatformAccessories("homebridge-signalk", "SignalK", [newAccessory]);
-}
-
-SignalKPlatform.prototype.updateAccessoriesReachability = function() {
-  this.log("Update Reachability");
-  for (var index in this.accessories) {
-    var accessory = this.accessories[index];
-    accessory.updateReachability(false);
-  }
-}
-
-// Sample function to show how developer can remove accessory dynamically from outside event
-SignalKPlatform.prototype.removeAccessory = function() {
-  this.log("Remove Accessory");
-  this.api.unregisterPlatformAccessories("homebridge-signalk", "SignalK", this.accessories);
-
-  this.accessories = [];
-}

@@ -18,6 +18,7 @@
     "homebridge": ">=0.2.0"
   },
   "dependencies": {
+    "lodash": "^4.17.4",
     "request": "^2.83.0",
     "url": "^0.11.0",
     "http": "^0.0.0"
