@@ -109,21 +109,21 @@ SignalKAccessory.prototype.getName = function(path, defaultName) {
 // Lookup full API Keys tree for HomeKit suitable devices
 SignalKAccessory.prototype.processFullTree = function(body, callback) {
   console.log("Processing Tree Start");
-  log(body);
+  console.log(body);
   
   var tree = JSON.parse(body);
   var services = []
 
   var switches = _.get(tree, 'electrical.empirBusNxt');
-  log("Switches")
-  log(switches);
+  console.log("Switches")
+  console.log(switches);
   if ( switches ) {
     _.keys(switches).forEach(instance => {
       _.keys(switches[instance]).forEach(element => {
         var path = `electrical.empirBusNxt.${instance}.switches.${element}`;
         var displayName = this.getName(path, `Component ${instance} Switch ${element}`)
 //        services.push(this.addSwitchService(displayName, `${instance}.${element}`, path))
-log (this.addSwitchService(displayName, `${instance}.${element}`, path))
+console.log (this.addSwitchService(displayName, `${instance}.${element}`, path))
       })
     });
   }
