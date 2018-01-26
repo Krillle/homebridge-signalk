@@ -123,7 +123,7 @@ SignalKAccessory.prototype.processFullTree = function(body, callback) {
         var path = `electrical.empirBusNxt.${instance}.switches.${element}`;
         var displayName = this.getName(path, `Component ${instance} Switch ${element}`)
 //        services.push(this.addSwitchService(displayName, `${instance}.${element}`, path))
-console.log (displayName, `${instance}.${element}`, path))
+console.log (displayName, `${instance}.${element}`, path)
       })
     });
   }
