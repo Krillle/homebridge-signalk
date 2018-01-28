@@ -15,7 +15,7 @@ module.exports = function(homebridge) {
   UUIDGen = homebridge.hap.uuid;
 
   // For platform plugin to be considered as dynamic platform plugin,
-  // registerPlatform(pluginName, platformName, constructor, dynamic), dynamic must be true  
+  // registerPlatform(pluginName, platformName, constructor, dynamic), dynamic must be true
   homebridge.registerPlatform("homebridge-platform-signalk", "SignalK", SKPlatform, true);
 }
 
@@ -50,7 +50,7 @@ SKPlatform.prototype.accessories = function(callback) {
   informationService.setCharacteristic(Characteristic.Manufacturer, "Catalina")
   informationService.setCharacteristic(Characteristic.Model, "Cat 30")
   informationService.setCharacteristic(Characteristic.SerialNumber, '333323232')
-  
+
   battery.autoDetect(this.url, (error, services) => {
     if ( error ) {
       this.log(`error: ${error}`);
@@ -137,7 +137,7 @@ SignalKAccessory.prototype.getAnchor = function(callback) {
               callback(new Error(`invalid response ${response.statusCode}`))
             } else {
               var position = JSON.parse(body);
-              callback(null, position != null && position.longitude != null) 
+              callback(null, position != null && position.longitude != null)
               /*
               var this.url + 'navigation/anchor/maxRadius/value'
               request(url,
@@ -149,7 +149,7 @@ SignalKAccessory.prototype.getAnchor = function(callback) {
                           callback(new Error(`invalid response ${response.statusCode}`))
                         } else {
                           var maxRadius = JSON.parse(body)
-                          
+
                           cb(null, conversion(body))
                         }
                       });
@@ -169,16 +169,16 @@ SignalKAccessory.prototype.addBatteryService = function(name, subtype, path) {
   }
   this.log(`add battery ${name} ${subtype} ${path}`)
   var service = new Service.BatteryService(name, subtype)
-  
+
   service.getCharacteristic(Characteristic.BatteryLevel)
     .on('get', this.getRatio.bind(this, path + '.capacity.stateOfCharge'));
   service.getCharacteristic(Characteristic.ChargingState)
     .on('get', this.getChargingState.bind(this, path + '.chargingMode'));
   service.getCharacteristic(Characteristic.StatusLowBattery)
     .on('get', this.getStatusLowBattery.bind(this, path + ".voltage"));
-  
+
   service.setCharacteristic(Characteristic.Name, name);
-  
+
   return service;
 }
 
@@ -193,13 +193,13 @@ SignalKAccessory.prototype.addTemperatureService = function(name, subtype, path)
   }
   this.log(`add temperature ${name} ${subtype} ${path}`)
   var service = new Service.TemperatureSensor(name, subtype)
-  
+
   service.getCharacteristic(Characteristic.CurrentTemperature)
     .on('get', this.getTemperature.bind(this, path));
-  
+
   service.setCharacteristic(Characteristic.Name, name);
   service.setCharacteristic(Characteristic.StatusActive, 1);
-  
+
   return service;
 }
 
@@ -209,12 +209,12 @@ SignalKAccessory.prototype.addHumidityService = function(name, subtype, path) {
   }
   this.log(`add humidity ${name} ${subtype} ${path}`)
   var service = new Service.HumiditySensor(name, subtype)
-  
+
   service.getCharacteristic(Characteristic.CurrentRelativeHumidity)
     .on('get', this.getRatio.bind(this, path));
-  
+
   service.setCharacteristic(Characteristic.Name, name);
-  
+
   return service;
 }
 
@@ -224,13 +224,13 @@ SignalKAccessory.prototype.addTankService = function(name, subtype, path) {
   }
   this.log(`add tank ${name} ${subtype} ${path}`)
   var service = new Service.Lightbulb(name, subtype)
-  
+
   service.getCharacteristic(Characteristic.Brightness)
     .on('get', this.getRatio.bind(this, path + '.currentLevel'));
 
   service.setCharacteristic(Characteristic.On, 1);
   service.setCharacteristic(Characteristic.Name, name);
-  
+
   return service;
 }
 
@@ -274,9 +274,9 @@ SignalKAccessory.prototype.processFullTree = function(body, callback) {
   var tree = JSON.parse(body);
 
   var services = []
-  
+
  // services.push(this.addAnchorService());
-  
+
   var switches = _.get(tree, 'electrical.empirBusNxt');
   log("Switches")
   log(switches);
@@ -290,13 +290,13 @@ log (this.addSwitchService(displayName, `${instance}.${element}`, path))
       })
     });
   }
-  
+
   var batteries = _.get(tree, 'electrical.batteries');
   if ( batteries ) {
     _.keys(batteries).forEach(instance => {
       var path = `electrical.batteries.${instance}`
       var displayName = this.getName(path, `Battery ${instance}`);
-      
+
       services.push(this.addBatteryService(displayName, `battery.${instance}`, path))
     });
   }
