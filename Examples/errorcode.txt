@@ -1,0 +1,85 @@
+GET /signalk/v1/api/vessels/self/ 200 4.409 ms - 4090
+GET /signalk/v1/api/vessels/self/electrical/empirBusNxt/0/dimmers/0/state/value 200 7.535 ms - 3
+GET /signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/6/state/value 200 35.219 ms - 4
+GET /signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/0/state/value 200 38.958 ms - 4
+GET /signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/7/state/value 200 41.233 ms - 4
+GET /signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/1/state/value 200 43.433 ms - 4
+GET /signalk/v1/api/vessels/self/electrical/empirBusNxt/0/dimmers/0/state/value 200 44.622 ms - 3
+GET /signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/2/state/value 200 45.916 ms - 4
+GET /signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/3/state/value 200 45.700 ms - 4
+GET /signalk/v1/api/vessels/self/electrical/empirBusNxt/0/dimmers/1/state/value 200 47.272 ms - 4
+GET /signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/4/state/value 200 43.799 ms - 4
+GET /signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/5/state/value 200 45.436 ms - 4
+PUT /signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/1/state/ 404 14.647 ms - 209
+GET /signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/1/state/ 200 9.070 ms - 87
+
+
+
+[1/29/2018, 10:31:02 AM] [Ibelle] GET http://127.0.0.1:3000/signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/1/state/value
+  Accessory [HomeBridge] Getting value for Characteristic "On" +25ms
+[1/29/2018, 10:31:02 AM] [Ibelle] GET http://127.0.0.1:3000/signalk/v1/api/vessels/self/electrical/empirBusNxt/0/dimmers/0/state/value
+  Accessory [HomeBridge] Getting value for Characteristic "On" +2ms
+[1/29/2018, 10:31:02 AM] [Ibelle] GET http://127.0.0.1:3000/signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/2/state/value
+  Accessory [HomeBridge] Getting value for Characteristic "On" +4ms
+[1/29/2018, 10:31:02 AM] [Ibelle] GET http://127.0.0.1:3000/signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/3/state/value
+  Accessory [HomeBridge] Getting value for Characteristic "On" +3ms
+[1/29/2018, 10:31:02 AM] [Ibelle] GET http://127.0.0.1:3000/signalk/v1/api/vessels/self/electrical/empirBusNxt/0/dimmers/1/state/value
+  Accessory [HomeBridge] Getting value for Characteristic "On" +1ms
+[1/29/2018, 10:31:02 AM] [Ibelle] GET http://127.0.0.1:3000/signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/4/state/value
+  Accessory [HomeBridge] Getting value for Characteristic "On" +2ms
+[1/29/2018, 10:31:02 AM] [Ibelle] GET http://127.0.0.1:3000/signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/5/state/value
+[1/29/2018, 10:31:02 AM] [Ibelle] response: "on", "\"on\""
+  Accessory [HomeBridge] Got Characteristic "On" value: true +100ms
+  EventedHTTPServer [::ffff:192.168.178.44] Muting event '2.36' notification for this connection since it originated here. +3ms
+[1/29/2018, 10:31:02 AM] [Ibelle] response: "on", "\"on\""
+  Accessory [HomeBridge] Got Characteristic "On" value: true +13ms
+  EventedHTTPServer [::ffff:192.168.178.44] Muting event '2.18' notification for this connection since it originated here. +0ms
+[1/29/2018, 10:31:02 AM] [Ibelle] response: "on", "\"on\""
+  Accessory [HomeBridge] Got Characteristic "On" value: true +4ms
+  EventedHTTPServer [::ffff:192.168.178.44] Muting event '2.39' notification for this connection since it originated here. +1ms
+[1/29/2018, 10:31:02 AM] [Ibelle] response: "on", "\"on\""
+  Accessory [HomeBridge] Got Characteristic "On" value: true +4ms
+  EventedHTTPServer [::ffff:192.168.178.44] Muting event '2.21' notification for this connection since it originated here. +1ms
+[1/29/2018, 10:31:02 AM] [Ibelle] response: 0.5, "0.5"
+  Accessory [HomeBridge] Got Characteristic "On" value: true +9ms
+[1/29/2018, 10:31:02 AM] [Ibelle] response: "on", "\"on\""
+  Accessory [HomeBridge] Got Characteristic "On" value: true +14ms
+  EventedHTTPServer [::ffff:192.168.178.44] Muting event '2.24' notification for this connection since it originated here. +0ms
+[1/29/2018, 10:31:02 AM] [Ibelle] response: "on", "\"on\""
+  Accessory [HomeBridge] Got Characteristic "On" value: true +4ms
+  EventedHTTPServer [::ffff:192.168.178.44] Muting event '2.27' notification for this connection since it originated here. +0ms
+[1/29/2018, 10:31:02 AM] [Ibelle] response: 0.75, "0.75"
+  Accessory [HomeBridge] Got Characteristic "On" value: true +6ms
+  EventedHTTPServer [::ffff:192.168.178.44] Muting event '2.14' notification for this connection since it originated here. +0ms
+[1/29/2018, 10:31:02 AM] [Ibelle] response: "on", "\"on\""
+  Accessory [HomeBridge] Got Characteristic "On" value: true +3ms
+  EventedHTTPServer [::ffff:192.168.178.44] Muting event '2.30' notification for this connection since it originated here. +0ms
+[1/29/2018, 10:31:02 AM] [Ibelle] response: "on", "\"on\""
+  Accessory [HomeBridge] Got Characteristic "On" value: true +4ms
+  EventedHTTPServer [::ffff:192.168.178.44] Muting event '2.33' notification for this connection since it originated here. +1ms
+  EventedHTTPServer [::ffff:192.168.178.44] HTTP Response is finished +0ms
+  EventedHTTPServer [::ffff:192.168.178.44] HTTP request: /characteristics +3s
+  HAPServer [CC:22:3D:E3:CE:30] HAP Request: PUT /characteristics +0ms
+  Accessory [HomeBridge] Processing characteristic set: [{"aid":2,"iid":21,"value":0}] +2ms
+  Accessory [HomeBridge] Setting Characteristic "On" to value 0 +1ms
+[1/29/2018, 10:31:05 AM] [Ibelle] PUT http://127.0.0.1:3000/signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/1/state/
+[1/29/2018, 10:31:05 AM] [Ibelle] Set switch Switch 0.2.state to false
+  EventedHTTPServer [::ffff:192.168.178.44] Muting event '2.21' notification for this connection since it originated here. +15ms
+  EventedHTTPServer [::ffff:192.168.178.44] HTTP Response is finished +1ms
+[1/29/2018, 10:31:06 AM] [Ibelle] response: {"statusCode":404,"body":"<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/1/state/</pre>\n</body>\n</html>\n","headers":{"x-powered-by":"Express","access-control-allow-origin":"*","content-security-policy":"default-src 'self'","x-content-type-options":"nosniff","content-type":"text/html; charset=utf-8","content-length":"209","date":"Mon, 29 Jan 2018 10:31:05 GMT","connection":"close"},"request":{"uri":{"protocol":"http:","slashes":true,"auth":null,"host":"127.0.0.1:3000","port":"3000","hostname":"127.0.0.1","hash":null,"search":null,"query":null,"pathname":"/signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/1/state/","path":"/signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/1/state/","href":"http://127.0.0.1:3000/signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/1/state/"},"method":"PUT","headers":{"content-length":0}}} body "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /signalk/v1/api/vessels/self/electrical/empirBusNxt/0/switches/1/state/</pre>\n</body>\n</html>\n"
+/home/pi/homebridge-signalk/index.js:177
+              cb(new Error(`invalid response ${response.statusCode}`))
+              ^
+
+TypeError: cb is not a function
+    at Request.request [as _callback] (/home/pi/homebridge-signalk/index.js:177:15)
+    at Request.self.callback (/home/pi/homebridge-signalk/node_modules/request/request.js:186:22)
+    at emitTwo (events.js:106:13)
+    at Request.emit (events.js:191:7)
+    at Request.<anonymous> (/home/pi/homebridge-signalk/node_modules/request/request.js:1163:10)
+    at emitOne (events.js:96:13)
+    at Request.emit (events.js:188:7)
+    at IncomingMessage.<anonymous> (/home/pi/homebridge-signalk/node_modules/request/request.js:1085:12)
+    at IncomingMessage.g (events.js:292:16)
+    at emitNone (events.js:91:20)
+pi@signalk:~ $

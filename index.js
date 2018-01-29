@@ -36,7 +36,6 @@ function SignalKPlatform(log, config, api) {
 // Autodetect from API all Dimmers, Switches
 
 SignalKPlatform.prototype.accessories = function(callback) {
-console.log("prototype.accessories");
   this.url = this.config.url
   if ( this.url.charAt(this.url.length-1) != '/' )   // Append "/" to URL if missing
     this.url = this.url + '/'
@@ -71,7 +70,6 @@ console.log("prototype.accessories");
 
 
 function SignalKAccessory(log, url, config, name) {
-console.log("SignalKAccessory");
   this.log = log;
   this.name = name;
   this.config = config;
@@ -93,14 +91,14 @@ SignalKAccessory.prototype.addLightbulbService = function(name, subtype, path) {
   service.getCharacteristic(Characteristic.On)
     .on('get', this.getOnOff.bind(this, path + '.state'))
     .on('set', function(value, callback) {
-      that.log(`Set dimmer ${name} to ${value}`)
+      that.log(`Set dimmer ${name}.state to ${value}`)
       callback();
     });
 
     service.getCharacteristic(Characteristic.Brightness)
       .on('get', this.getRatio.bind(this, path + '.state'))
       .on('set', function(value, callback) {
-        that.log(`Set dimmer ${name} to ${value}`)
+        that.log(`Set dimmer ${name}.Brightness to ${value}`)
         callback();
       });
 
@@ -121,7 +119,8 @@ SignalKAccessory.prototype.addSwitchService = function(name, subtype, path) {
   service.getCharacteristic(Characteristic.On)
     .on('get', this.getOnOff.bind(this, path + '.state'))
     .on('set', function(value, callback) {
-      that.log(`Set switch ${name} to ${value}`)
+      that.setOnOff(path + '.state', `${value}`)
+      that.log(`Set switch ${name}.state to ${value}`)
       callback();
     });
   service.setCharacteristic(Characteristic.Name, name);
@@ -132,7 +131,7 @@ SignalKAccessory.prototype.addSwitchService = function(name, subtype, path) {
 // - - - - - - - Helper functions - - - - - - -
 
 SignalKAccessory.prototype.autoDetect = function(url, callback) {
-console.log("Autodetect");
+  this.log("Starting autodetect");
   request(url,
           (error, response, body) => {
             if ( error ) {
@@ -160,10 +159,40 @@ SignalKAccessory.prototype.getName = function(path, defaultName) {
 }
 
 
+// Writes value for path to Signal K API
+SignalKAccessory.prototype.setValue = function(path, value, cb, conversion) {
+  path = path + '.'
+  var url = this.url + path.replace(/\./g, '/')
+  this.log(`PUT ${url}`)
+  request({url: url,
+           method: 'PUT',
+           data: conversion(value)
+          },
+          (error, response, body) => {
+            this.log(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
+//            this.log(`response: ${body}, ${JSON.stringify(body)}`)
+            if ( error ) {
+              cb(error, null)
+            } else if ( response.statusCode != 200 ) {
+              cb(new Error(`invalid response ${response.statusCode}`))
+            } else {
+              cb(null, conversion(body))
+            }
+          })
+}
+
+
+// Set the state of path as boolean
+SignalKAccessory.prototype.setOnOff = function(path, value, callback) {
+  this.setValue(path, value, callback,
+                (value) => value ? 'on' : 'off')
+}
+
+
 // Reads value for path from Signal K API
 SignalKAccessory.prototype.getValue = function(path, cb, conversion) {
   var url = this.url + path.replace(/\./g, '/')
-  this.log(`url ${url}`)
+  this.log(`GET ${url}`)
   request(url,
           (error, response, body) => {
 //            this.log(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
