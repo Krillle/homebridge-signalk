@@ -5,6 +5,17 @@ var url = require('url');
 
 var Accessory, Service, Characteristic, UUIDGen;
 
+// EmpirBus:
+//
+// Key path according to EmpirBus Application Specific PGN Data Model 2 (2x word + 8x bit) per instance:
+// 2x dimmer values 0 = off .. 1000 = 100%, 8x switch values 0 = off / 1 = on
+//
+// electrical.controls.empirBusNxt:instance<NXT component instance 0..49>:switch<#0..7>.state
+// electrical.controls.empirBusNxt:instance<NXT component instance 0..49>:dimmer<#0..1>.state
+
+const controlsPath = 'electrical.controls'
+const empirBusIdentifier = 'empirBusNxt'
+
 module.exports = function(homebridge) {
   console.log("homebridge API version: " + homebridge.version);
 
@@ -119,7 +130,7 @@ SignalKAccessory.prototype.addSwitchService = function(name, subtype, path) {
   service.getCharacteristic(Characteristic.On)
     .on('get', this.getOnOff.bind(this, path + '.state'))
     .on('set', function(value, callback) {
-      that.setOnOff(path + '.state', `${value}`)
+      that.setOnOff(path, `${value}`)
       that.log(`Set switch ${name}.state to ${value}`)
       callback();
     });
@@ -161,20 +172,18 @@ SignalKAccessory.prototype.getName = function(path, defaultName) {
 
 // Writes value for path to Signal K API
 SignalKAccessory.prototype.setValue = function(path, value, cb, conversion) {
-  path = path + '.'
-  var url = this.url + path.replace(/\./g, '/')
+  var url = 'http://127.0.0.1:3000/' + path.replace(/\./g, '/') + "/" + value
   this.log(`PUT ${url}`)
   request({url: url,
            method: 'PUT',
-           data: conversion(value)
           },
           (error, response, body) => {
-            this.log(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
-//            this.log(`response: ${body}, ${JSON.stringify(body)}`)
+            // this.log(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
+            this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
             if ( error ) {
               cb(error, null)
             } else if ( response.statusCode != 200 ) {
-              cb(new Error(`invalid response ${response.statusCode}`))
+//              cb(new Error(`invalid response ${response.statusCode}`))
             } else {
               cb(null, conversion(body))
             }
@@ -196,7 +205,7 @@ SignalKAccessory.prototype.getValue = function(path, cb, conversion) {
   request(url,
           (error, response, body) => {
 //            this.log(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
-            this.log(`response: ${body}, ${JSON.stringify(body)}`)
+            this.log(`response: ${body} ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
             if ( error ) {
               cb(error, null)
             } else if ( response.statusCode != 200 ) {
@@ -222,29 +231,30 @@ SignalKAccessory.prototype.getOnOff = function(path, callback) {
 
 // Lookup full API Keys tree for HomeKit suitable devices
 SignalKAccessory.prototype.processFullTree = function(body, callback) {
-  console.log("Processing Tree Start");
 
   var tree = JSON.parse(body);
   var services = []
 
-  var controls = _.get(tree, 'electrical.empirBusNxt');
+  var controls = _.get(tree, controlsPath);
 
   if ( controls ) {
-    _.keys(controls).forEach(instance => {
-      _.keys(controls[instance]).forEach(devicetype => {
-	      _.keys(controls[instance][devicetype]).forEach(element => {
-	        var path = `electrical.empirBusNxt.${instance}.${devicetype}.${element}`;
-	        var displayName = this.getName(path, (devicetype == 'dimmers' ? 'Dimmer ' : 'Switch ') + `${instance}.${Number(element)+1}`)
-          switch(devicetype) {
-            case 'switches':
-              services.push(this.addSwitchService(displayName, `${instance}.${devicetype}.${element}`, path));
-              break;
-            case 'dimmers':
-              services.push(this.addLightbulbService(displayName, `${instance}.${devicetype}.${element}`, path));
+    _.keys(controls).forEach(device => {
+
+      if ((device.slice(0,empirBusIdentifier.length)) == empirBusIdentifier ) {
+        var path = `${controlsPath}.${device}`;
+        var fallbackName = controls[device].name.value || controls[device].meta.displayName.value ;
+        var displayName = this.getName(path, fallbackName);
+        var devicetype = controls[device].type.value;
+
+        switch(devicetype) {
+          case 'switch':
+            services.push(this.addSwitchService(displayName, device, path));
             break;
-          }
-	      })
-	  })
+          case 'dimmer':
+            services.push(this.addLightbulbService(displayName, device, path));
+          break;
+        }
+      }
     });
   }
   callback(null, services.filter(service => service != null))
