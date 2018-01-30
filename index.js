@@ -130,8 +130,8 @@ SignalKAccessory.prototype.addSwitchService = function(name, subtype, path) {
   service.getCharacteristic(Characteristic.On)
     .on('get', this.getOnOff.bind(this, path + '.state'))
     .on('set', function(value, callback) {
-      that.setOnOff(path, `${value}`)
       that.log(`Set switch ${name}.state to ${value}`)
+      that.setOnOff(path, `${value}`)
       callback();
     });
   service.setCharacteristic(Characteristic.Name, name);
@@ -171,7 +171,7 @@ SignalKAccessory.prototype.getName = function(path, defaultName) {
 
 
 // Writes value for path to Signal K API
-SignalKAccessory.prototype.setValue = function(path, value, cb, conversion) {
+SignalKAccessory.prototype.setValue = function(path, value, cb) {
   var url = 'http://127.0.0.1:3000/' + path.replace(/\./g, '/') + "/" + value
   this.log(`PUT ${url}`)
   request({url: url,
@@ -185,7 +185,7 @@ SignalKAccessory.prototype.setValue = function(path, value, cb, conversion) {
             } else if ( response.statusCode != 200 ) {
 //              cb(new Error(`invalid response ${response.statusCode}`))
             } else {
-              cb(null, conversion(body))
+              cb(null, null)
             }
           })
 }
@@ -193,8 +193,8 @@ SignalKAccessory.prototype.setValue = function(path, value, cb, conversion) {
 
 // Set the state of path as boolean
 SignalKAccessory.prototype.setOnOff = function(path, value, callback) {
-  this.setValue(path, value, callback,
-                (value) => value ? 'on' : 'off')
+  value = (value === true || value === "true") ? 'on' : 'off';
+  this.setValue(path, value, callback)
 }
 
 
