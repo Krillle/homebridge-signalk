@@ -1,7 +1,7 @@
 const _ = require('lodash');
 var request = require('request');
 var http = require('http');
-var url = require('url');
+var _url = require('url');
 
 var Accessory, Service, Characteristic, UUIDGen;
 
@@ -10,11 +10,12 @@ var Accessory, Service, Characteristic, UUIDGen;
 // Key path according to EmpirBus Application Specific PGN Data Model 2 (2x word + 8x bit) per instance:
 // 2x dimmer values 0 = off .. 1000 = 100%, 8x switch values 0 = off / 1 = on
 //
-// electrical.controls.empirBusNxt:instance<NXT component instance 0..49>:switch<#0..7>.state
-// electrical.controls.empirBusNxt:instance<NXT component instance 0..49>:dimmer<#0..1>.state
+// electrical.controls.empirBusNxt-instance<NXT component instance 0..49>-switch<#0..7>.state
+// electrical.controls.empirBusNxt-instance<NXT component instance 0..49>-dimmer<#0..1>.state
 
 const controlsPath = 'electrical.controls'
 const empirBusIdentifier = 'empirBusNxt'
+const putPath = '/plugins/signalk-empirbus-nxt/controls/'
 
 module.exports = function(homebridge) {
   console.log("homebridge API version: " + homebridge.version);
@@ -103,6 +104,7 @@ SignalKAccessory.prototype.addLightbulbService = function(name, subtype, path) {
     .on('get', this.getOnOff.bind(this, path + '.state'))
     .on('set', function(value, callback) {
       that.log(`Set dimmer ${name}.state to ${value}`)
+      that.setOnOff(subtype, value)
       callback();
     });
 
@@ -110,6 +112,7 @@ SignalKAccessory.prototype.addLightbulbService = function(name, subtype, path) {
       .on('get', this.getRatio.bind(this, path + '.state'))
       .on('set', function(value, callback) {
         that.log(`Set dimmer ${name}.Brightness to ${value}`)
+        that.SetRatio(subtype, value)
         callback();
       });
 
@@ -131,7 +134,7 @@ SignalKAccessory.prototype.addSwitchService = function(name, subtype, path) {
     .on('get', this.getOnOff.bind(this, path + '.state'))
     .on('set', function(value, callback) {
       that.log(`Set switch ${name}.state to ${value}`)
-      that.setOnOff(path, `${value}`)
+      that.setOnOff(subtype, value)
       callback();
     });
   service.setCharacteristic(Characteristic.Name, name);
@@ -170,34 +173,6 @@ SignalKAccessory.prototype.getName = function(path, defaultName) {
 }
 
 
-// Writes value for path to Signal K API
-SignalKAccessory.prototype.setValue = function(path, value, cb) {
-  var url = 'http://127.0.0.1:3000/' + path.replace(/\./g, '/') + "/" + value
-  this.log(`PUT ${url}`)
-  request({url: url,
-           method: 'PUT',
-          },
-          (error, response, body) => {
-            // this.log(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
-            this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
-            if ( error ) {
-              cb(error, null)
-            } else if ( response.statusCode != 200 ) {
-//              cb(new Error(`invalid response ${response.statusCode}`))
-            } else {
-              cb(null, null)
-            }
-          })
-}
-
-
-// Set the state of path as boolean
-SignalKAccessory.prototype.setOnOff = function(path, value, callback) {
-  value = (value === true || value === "true") ? 'on' : 'off';
-  this.setValue(path, value, callback)
-}
-
-
 // Reads value for path from Signal K API
 SignalKAccessory.prototype.getValue = function(path, cb, conversion) {
   var url = this.url + path.replace(/\./g, '/')
@@ -226,6 +201,40 @@ SignalKAccessory.prototype.getRatio = function(path, callback) {
 SignalKAccessory.prototype.getOnOff = function(path, callback) {
   this.getValue(path + '.value', callback,
                 (body) => (body == '"on"') || (Number(body) > 0))
+}
+
+
+// Writes value for path to Signal K API
+SignalKAccessory.prototype.setValue = function(device, value, cb) {
+  var url = _url.parse(this.url, true, true)
+  url = `${url.protocol}//${url.host}${putPath}${device}/${value}`
+  this.log(`PUT ${url}`)
+  request({url: url,
+           method: 'PUT'
+          },
+          (error, response, body) => {
+//            this.log(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
+            this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
+            if ( error ) {
+              cb(error, null)
+            } else if ( response.statusCode != 200 ) {
+              cb(new Error(`invalid response ${response.statusCode}`))
+            } else {
+              cb(null, null)
+            }
+          })
+}
+
+// Set brightness of path as 0..1
+SignalKAccessory.prototype.SetRatio = function(device, value, callback) {
+  value = value / 100;
+  this.setValue(device, value, callback);
+}
+
+// Set the state of path as boolean
+SignalKAccessory.prototype.setOnOff = function(device, value, callback) {
+  value = (value === true || value === "true") ? 'on' : 'off';
+  this.setValue(device, value, callback);
 }
 
 
