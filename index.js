@@ -2,6 +2,7 @@ const _ = require('lodash');
 var request = require('request');
 var http = require('http');
 var _url = require('url');
+var pollingtoevent = require("polling-to-event");
 
 var Accessory, Service, Characteristic, UUIDGen;
 
@@ -16,6 +17,9 @@ var Accessory, Service, Characteristic, UUIDGen;
 const controlsPath = 'electrical.controls'
 const empirBusIdentifier = 'empirBusNxt'
 const putPath = '/plugins/signalk-empirbus-nxt/controls/'
+
+var updateSubscriptions = []; // Collects the devices to update in polling squence
+
 
 module.exports = function(homebridge) {
   console.log("homebridge API version: " + homebridge.version);
@@ -41,6 +45,35 @@ function SignalKPlatform(log, config, api) {
   var platform = this;
   this.log = log;
   this.config = config;
+  this.api = api;
+
+  if (api) {
+      // Save the API object as plugin needs to register new accessory via this object
+      this.api = api;
+
+      // Listen to event "didFinishLaunching", this means homebridge already finished loading cached accessories.
+      // Platform Plugin should only register new accessory that doesn't exist in homebridge after this event.
+      // Or start discover new accessories.
+      this.api.on('didFinishLaunching', function() {
+        platform.log("DidFinishLaunching");
+      }.bind(this));
+  }
+}
+
+
+// SignalKAccessory definition
+
+function SignalKAccessory(log, url, config, name) {
+  this.log = log;
+  this.name = name;
+  this.config = config;
+  this.url = url;
+}
+
+// Services definition
+
+SignalKAccessory.prototype.getServices = function(callback) {
+  return this.services
 }
 
 //
@@ -53,10 +86,6 @@ SignalKPlatform.prototype.accessories = function(callback) {
     this.url = this.url + '/'
 
   var informationService = new Service.AccessoryInformation();
-  //  informationService
-  //  .setCharacteristic(Characteristic.Manufacturer, "Linskens")
-  //  .setCharacteristic(Characteristic.Model, "Catfish 46")
-  //  .setCharacteristic(Characteristic.SerialNumber, 'NL-GLW46003E212');
 
   //  Supposed to be characteristic of each single accessory.
   //  FIXME: Especially SerialNumber supposed to be UUID
@@ -66,27 +95,72 @@ SignalKPlatform.prototype.accessories = function(callback) {
     .setCharacteristic(Characteristic.SerialNumber, 'GLW46003E212');
 
 
-  var dimmer = new SignalKAccessory(this.log, this.url, this.config, "Noname")
+  var ThisAccessory = new SignalKAccessory(this.log, this.url, this.config, "Noname")
 
-  dimmer.autoDetect(this.url, (error, services) => {
+  ThisAccessory.autoDetect(this.url, (error, services) => {
     if ( error ) {
       this.log(`error: ${error}`);
       callback([]);
     } else {
       services.push(informationService);
-      dimmer.services = services;
-      callback([dimmer])
+      ThisAccessory.services = services;
+      callback([ThisAccessory])
     }
   });
 }
 
+// - - - - - - - Autodetect Devices - - - - - - -
 
-function SignalKAccessory(log, url, config, name) {
-  this.log = log;
-  this.name = name;
-  this.config = config;
-  this.url = url;
+SignalKAccessory.prototype.autoDetect = function(url, callback) {
+  this.log("Starting autodetect");
+  request(url,
+          (error, response, body) => {
+            if ( error ) {
+              callback(error);
+            } else if ( response.statusCode != 200 ) {
+              callback(new Error(`response code ${response.statusCode}`))
+            } else {
+              this.processFullTree(body, callback);
+              this.InitiatePolling(url + controlsPath.replace(/\./g, '/'))
+            }
+          })
+}
 
+// Lookup full API Keys tree for HomeKit suitable devices
+SignalKAccessory.prototype.processFullTree = function(body, callback) {
+
+  console.log("Check:",this.log, this.url, this.config, "Noname");
+
+
+  var tree = JSON.parse(body);
+  var services = []
+
+  // Add electrical controls (EmpirBus NXT)
+  var controls = _.get(tree, controlsPath);
+
+  if ( controls ) {
+    _.keys(controls).forEach(device => {
+
+      if ((device.slice(0,empirBusIdentifier.length)) == empirBusIdentifier ) {
+        var path = `${controlsPath}.${device}`;
+        var fallbackName = controls[device].name.value || controls[device].meta.displayName.value ;
+        var displayName = this.getName(path, fallbackName);
+        var devicetype = controls[device].type.value;
+
+        switch(devicetype) {
+          case 'switch':
+            services.push(this.addSwitchService(displayName, device, path));
+            updateSubscriptions.push(displayName, device, path);
+            break;
+          case 'dimmer':
+            services.push(this.addLightbulbService(displayName, device, path));
+            updateSubscriptions.push(displayName, device, path);
+          break;
+        }
+      }
+    });
+  }
+  callback(null, services.filter(service => service != null))
 }
 
 
@@ -142,25 +216,7 @@ SignalKAccessory.prototype.addSwitchService = function(name, subtype, path) {
   return service;
 }
 
-// - - - - - - - Helper functions - - - - - - -
-
-SignalKAccessory.prototype.autoDetect = function(url, callback) {
-  this.log("Starting autodetect");
-  request(url,
-          (error, response, body) => {
-            if ( error ) {
-              callback(error);
-            } else if ( response.statusCode != 200 ) {
-              callback(new Error(`response code ${response.statusCode}`))
-            } else {
-              this.processFullTree(body, callback);
-            }
-          })
-}
-
-SignalKAccessory.prototype.getServices = function(callback) {
-  return this.services
-}
+// - - - - - - - Read and write keys functions - - - - - - -
 
 // Returns true if path is not an ignored path in config.json
 SignalKAccessory.prototype.checkPath = function(path) {
@@ -220,7 +276,7 @@ SignalKAccessory.prototype.setValue = function(device, value, cb) {
             } else if ( response.statusCode != 200 ) {
               cb(new Error(`invalid response ${response.statusCode}`))
             } else {
-              cb(null, null)
+//              cb(null, null)
             }
           })
 }
@@ -238,33 +294,40 @@ SignalKAccessory.prototype.setOnOff = function(device, value, callback) {
 }
 
 
-// Lookup full API Keys tree for HomeKit suitable devices
-SignalKAccessory.prototype.processFullTree = function(body, callback) {
+// - - - - - - - API Status polling - - - - - - -
 
-  var tree = JSON.parse(body);
-  var services = []
-
-  var controls = _.get(tree, controlsPath);
-
-  if ( controls ) {
-    _.keys(controls).forEach(device => {
-
-      if ((device.slice(0,empirBusIdentifier.length)) == empirBusIdentifier ) {
-        var path = `${controlsPath}.${device}`;
-        var fallbackName = controls[device].name.value || controls[device].meta.displayName.value ;
-        var displayName = this.getName(path, fallbackName);
-        var devicetype = controls[device].type.value;
-
-        switch(devicetype) {
-          case 'switch':
-            services.push(this.addSwitchService(displayName, device, path));
-            break;
-          case 'dimmer':
-            services.push(this.addLightbulbService(displayName, device, path));
-          break;
-        }
-      }
+SignalKAccessory.prototype.InitiatePolling = function(pollUrl) {
+  console.log('Poll URL: ' + pollUrl);
+  emitter = pollingtoevent(function(callback) {
+    request.get(pollUrl, function(err, req, data) {
+      callback(err, data);
     });
-  }
-  callback(null, services.filter(service => service != null))
+  }, {
+    longpolling:true
+  });
+
+  emitter.on("longpoll", function(data) {
+    console.log("longpoll emitted at %s, with data %j", Date.now());
+  });
+
+  // emitter.on("poll", function(data) {
+  //   console.log("Event emitted at %s, with data %j", Date.now(), data);
+  // });
+  //
+  emitter.on("error", function(err, data) {
+    console.log("Emitter errored: %s. with data %j", err, data);
+  });
+};
+
+
+SignalKAccessory.prototype.manageValue = function(change) {
+    for (let i = 0; i < this.platform.updateSubscriptions.length; i++) {
+        let subscription = this.platform.updateSubscriptions[i];
+        if (subscription.id == change.id && subscription.property == "value") {
+            this.platform.log("Updating value for device: ", `${subscription.id}  parameter: ${subscription.characteristic.displayName}, value: ${change.value}`);
+            let getFunction = this.platform.getFunctions.getFunctionsMapping.get(subscription.characteristic.UUID);
+            if (getFunction)
+                getFunction.call(this.platform.getFunctions, null, subscription.characteristic, subscription.service, null, change);
+        }
+    }
 }
