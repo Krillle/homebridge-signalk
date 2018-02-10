@@ -213,6 +213,36 @@ SignalKPlatform.prototype.configurationRequestHandler = function(context, reques
   callback(respDict);
 }
 
+
+// // Sample function to show how developer can add accessory dynamically from outside event
+// SignalKPlatform.prototype.addAccessory = function(accessoryName) {
+//   this.log("Add Accessory");
+//   var platform = this;
+//   var uuid;
+//
+//   uuid = UUIDGen.generate(accessoryName);
+//
+//   var newAccessory = new Accessory(accessoryName, uuid);
+//   newAccessory.on('identify', function(paired, callback) {
+//     platform.log(newAccessory.displayName, "Identify!!!");
+//     callback();
+//   });
+//   // Plugin can save context on accessory to help restore accessory in configureAccessory()
+//   // newAccessory.context.something = "Something"
+//
+//   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
+//   newAccessory.addService(Service.Lightbulb, "Test Light")
+//   .getCharacteristic(Characteristic.On)
+//   .on('set', function(value, callback) {
+//     platform.log(newAccessory.displayName, "Light -> " + value);
+//     callback();
+//   });
+//
+//   this.accessories.push(newAccessory);
+//   this.api.registerPlatformAccessories("homebridge-signalk", "SignalK", [newAccessory]);
+// }
+
+
 // Add accessory
 SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, devicetype) {
   var platform = this;
@@ -256,12 +286,6 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
 // Add services for Dimmer to exist accessory object
 SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   var platform = this;
-  
-  for (let s = 0; s < accessory.services.length; s++) {
-      console.log("Service", accessory.services[s], accessory.services[s].subtype);
-  }
-
-  console.log('A servcied added');
 
   accessory.on('identify', function(paired, callback) {
     platform.log(`Identifying Dimmer Accessory ${accessory.displayName} by off/on/off cycle`);
@@ -280,7 +304,6 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
 
     callback();
   });
-  console.log('B servcied added');
 
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   accessory.getService(Service.Lightbulb)
@@ -291,7 +314,6 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
     platform.setOnOff(accessory.context.identifier, value)
     callback();
   })
-  console.log('C servcied added');
 
   accessory.getService(Service.Lightbulb)
   .getCharacteristic(Characteristic.Brightness)
@@ -301,7 +323,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
     platform.SetRatio(accessory.context.identifier, value)
     callback();
   });
-  console.log('D servcied added');
+
 }
 
 // Add services for Switch to exist accessory object
@@ -319,7 +341,7 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
 }
 
 // // Add Switch accessory
-// SignalKPlatform.prototype.addSwitchAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, isNewAccessory) {
+// SignalKPlatform.prototype.addSwitchAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, controlsPath, devicetype) {
 //   var platform = this;
 //   var uuid;
 //
@@ -356,7 +378,7 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
 //   })
 //
 //   this.accessories.push(newAccessory);
-//   if (isNewAccessory) { this.api.registerPlatformAccessories("homebridge-signalk", "SignalK", [newAccessory])};
+//   this.api.registerPlatformAccessories("homebridge-signalk", "SignalK", [newAccessory]);
 // }
 
 
