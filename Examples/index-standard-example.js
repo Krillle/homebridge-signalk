@@ -19,7 +19,7 @@ module.exports = function(homebridge) {
 
 // Platform constructor
 // config may be null
-// api may be null if launched from old homebridge version
+   // api may be null if launched from old homebridge version
 function SamplePlatform(log, config, api) {
   log("SamplePlatform Init");
   var platform = this;

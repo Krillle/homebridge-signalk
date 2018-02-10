@@ -22,7 +22,7 @@ var updateSubscriptions = []; // Collects the devices to update in polling squen
 
 
 module.exports = function(homebridge) {
-  console.log("homebridge API version: " + homebridge.version);
+  // console.log("homebridge API version: " + homebridge.version);
 
   // Accessory must be created from PlatformAccessory Constructor
   Accessory = homebridge.platformAccessory;
@@ -84,8 +84,6 @@ function SignalKPlatform(log, config, api) {
       this.api.on('didFinishLaunching', function() {
         platform.log("Did finish launching, looking for new devices");
 
-console.log(platform.accessories);
-
         this.autodetectNewAccessories()
 //        this.InitiatePolling(url + controlsPath.replace(/\./g, '/'))
 
@@ -100,10 +98,22 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
   this.log(accessory.displayName, "Configure Accessory");
   var platform = this;
 
+  console.log(accessory);
+
   // Set the accessory to reachable if plugin can currently process the accessory,
   // otherwise set to false and update the reachability later by invoking
   // accessory.updateReachability()
   accessory.reachable = true;
+
+  accessoryName = accessory.displayName
+  uuid = accessory.UUID
+  identifier = accessory.context.identifier
+  path = accessory.context.path
+  manufacturer = accessory.context.manufacturer
+  model = accessory.context.model
+  serialnumber = accessory.context.serialnumber
+
+console.log(accessoryName, uuid, identifier, path, manufacturer, model, serialnumber);
 
   accessory.on('identify', function(paired, callback) {
     platform.log(accessory.displayName, "Identify!!!");
@@ -302,7 +312,7 @@ SignalKPlatform.prototype.addDimmerAccessory = function(accessoryName, identifie
 }
 
 // Add Switch accessory
-SignalKPlatform.prototype.addSwitchAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber) {
+SignalKPlatform.prototype.addSwitchAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, isNewAccessory) {
   var platform = this;
   var uuid;
 
@@ -339,7 +349,7 @@ SignalKPlatform.prototype.addSwitchAccessory = function(accessoryName, identifie
   })
 
   this.accessories.push(newAccessory);
-  this.api.registerPlatformAccessories("homebridge-signalk", "SignalK", [newAccessory]);
+  if (isNewAccessory) { this.api.registerPlatformAccessories("homebridge-signalk", "SignalK", [newAccessory])};
 }
 
 
@@ -399,8 +409,8 @@ SignalKPlatform.prototype.autodetectNewAccessories = function() {
 SignalKPlatform.prototype.processFullTree = function(body) {
 
   var tree = JSON.parse(body);
-  this.log("Processing full tree");
 
+  this.log("Adding electrical controls (EmpirBus NXT)");
   // Add electrical controls (EmpirBus NXT)
   var controls = _.get(tree, controlsPath);
 
