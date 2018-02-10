@@ -105,29 +105,29 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
   // accessory.updateReachability()
   accessory.reachable = true;
 
-  accessoryName = accessory.displayName
-  uuid = accessory.UUID
-  identifier = accessory.context.identifier
-  path = accessory.context.path
-  manufacturer = accessory.context.manufacturer
-  model = accessory.context.model
-  serialnumber = accessory.context.serialnumber
-
-console.log(accessoryName, uuid, identifier, path, manufacturer, model, serialnumber);
-
-  accessory.on('identify', function(paired, callback) {
-    platform.log(accessory.displayName, "Identify!!!");
-    callback();
-  });
-
-  if (accessory.getService(Service.Lightbulb)) {
-    accessory.getService(Service.Lightbulb)
-    .getCharacteristic(Characteristic.On)
-    .on('set', function(value, callback) {
-      platform.log(accessory.displayName, "Light -> " + value);
-      callback();
-    });
+  // Add Device Services
+  switch(accessory.context.devicetype) {
+    case 'switch':
+      this.addSwitchServices(accessory);
+      break;
+    case 'dimmer':
+        this.addDimmerServices(accessory);
+      break;
   }
+
+  // accessory.on('identify', function(paired, callback) {
+  //   platform.log(accessory.displayName, "Identify!!!");
+  //   callback();
+  // });
+  //
+  // if (accessory.getService(Service.Lightbulb)) {
+  //   accessory.getService(Service.Lightbulb)
+  //   .getCharacteristic(Characteristic.On)
+  //   .on('set', function(value, callback) {
+  //     platform.log(accessory.displayName, "Light -> " + value);
+  //     callback();
+  //   });
+  // }
 
   this.accessories.push(accessory);
 }
@@ -213,53 +213,58 @@ SignalKPlatform.prototype.configurationRequestHandler = function(context, reques
   callback(respDict);
 }
 
-// Template function to add accessory
-SignalKPlatform.prototype.addAccessory = function(accessoryName) {
-  this.log(`Add Default Accessory ${accessoryName}`);
+// Add accessory
+SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, devicetype) {
   var platform = this;
-  var uuid;
+  var uuid = UUIDGen.generate(accessoryName);
 
-  uuid = UUIDGen.generate(accessoryName);
+  this.log(`Add Accessory ${accessoryName}: ${path}, ${devicetype}`);
 
   var newAccessory = new Accessory(accessoryName, uuid);
-  newAccessory.on('identify', function(paired, callback) {
-    platform.log(newAccessory.displayName, "Identify!");
-    callback();
-  });
+
   // Plugin can save context on accessory to help restore accessory in configureAccessory()
-  // newAccessory.context.something = "Something"
+  newAccessory.context.identifier = identifier
+  newAccessory.context.path = path
+  newAccessory.context.categoryPath = categoryPath
+  newAccessory.context.devicetype = devicetype
+  newAccessory.context.manufacturer = manufacturer
+  newAccessory.context.model = model
+  newAccessory.context.serialnumber = serialnumber
 
   // Add Device Information
   newAccessory.getService(Service.AccessoryInformation)
-    .setCharacteristic(Characteristic.Manufacturer, "Demo Manufacturer")
-    .setCharacteristic(Characteristic.Model, "Demo Device")
-    .setCharacteristic(Characteristic.SerialNumber, 'GLW46003E212');
+    .setCharacteristic(Characteristic.Manufacturer, manufacturer)
+    .setCharacteristic(Characteristic.Model, model)
+    .setCharacteristic(Characteristic.SerialNumber, serialnumber);
 
-
-  // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
-  newAccessory.addService(Service.Lightbulb, accessoryName)
-  .getCharacteristic(Characteristic.On)
-  .on('set', function(value, callback) {
-    platform.log(newAccessory.displayName, "Light -> " + value);
-    callback();
-  });
+  // Add Device Services
+  switch(devicetype) {
+    case 'switch':
+      newAccessory.addService(Service.Switch, accessoryName)
+      this.addSwitchServices(newAccessory);
+      break;
+    case 'dimmer':
+      newAccessory.addService(Service.Lightbulb, accessoryName)
+      this.addDimmerServices(newAccessory);
+      break;
+  }
 
   this.accessories.push(newAccessory);
   this.api.registerPlatformAccessories("homebridge-signalk", "SignalK", [newAccessory]);
 }
 
-// Add Dimmer accessory
-SignalKPlatform.prototype.addDimmerAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber) {
+// Add services for Dimmer to exist accessory object
+SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   var platform = this;
-  var uuid;
+  
+  for (let s = 0; s < accessory.services.length; s++) {
+      console.log("Service", accessory.services[s], accessory.services[s].subtype);
+  }
 
-  uuid = UUIDGen.generate(accessoryName);
+  console.log('A servcied added');
 
-  this.log(`Add Dimmer Accessory ${accessoryName}: ${path}, ${uuid}`);
-
-  var newAccessory = new Accessory(accessoryName, uuid);
-  newAccessory.on('identify', function(paired, callback) {
-    platform.log(`Identifying Dimmer Accessory ${newAccessory.displayName} by off/on/off cycle`);
+  accessory.on('identify', function(paired, callback) {
+    platform.log(`Identifying Dimmer Accessory ${accessory.displayName} by off/on/off cycle`);
 
     // FIXME: Get state before cycle
     // var stateBefore;
@@ -267,90 +272,92 @@ SignalKPlatform.prototype.addDimmerAccessory = function(accessoryName, identifie
     // console.log(stateBefore);
 
     // Off/On/Off/Restore cycle
-    platform.setOnOff(identifier, false);
-    setTimeout(()=>{platform.setOnOff(identifier, true)}, 250);
-    setTimeout(()=>{platform.setOnOff(identifier, false)}, 750);
+    platform.setOnOff(accessory.context.identifier, false);
+    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, true)}, 250);
+    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, false)}, 750);
     // FIXME: Restore state before cycle
     //  setTimeout(()=>{platform.setOnOff(identifier, stateBefore)}, 1000);
 
     callback();
   });
-  // Plugin can save context on accessory to help restore accessory in configureAccessory()
-  newAccessory.context.identifier = identifier
-  newAccessory.context.path = path
-  newAccessory.context.manufacturer = manufacturer
-  newAccessory.context.model = model
-  newAccessory.context.serialnumber = serialnumber
-
-  // Add Device Information for EmpirBus NTX Dimmer
-  newAccessory.getService(Service.AccessoryInformation)
-    .setCharacteristic(Characteristic.Manufacturer, manufacturer)
-    .setCharacteristic(Characteristic.Model, model)
-    .setCharacteristic(Characteristic.SerialNumber, serialnumber);
+  console.log('B servcied added');
 
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
-  newAccessory.addService(Service.Lightbulb, accessoryName)
+  accessory.getService(Service.Lightbulb)
   .getCharacteristic(Characteristic.On)
-  .on('get', this.getOnOff.bind(this, path + '.state'))
+  .on('get', this.getOnOff.bind(this, accessory.context.path + '.state'))
   .on('set', function(value, callback) {
-    platform.log(`Set dimmer ${accessoryName}.state to ${value}`)
-    platform.setOnOff(identifier, value)
+    platform.log(`Set dimmer ${accessory.displayName}.state to ${value}`)
+    platform.setOnOff(accessory.context.identifier, value)
     callback();
   })
+  console.log('C servcied added');
 
-  newAccessory.getService(Service.Lightbulb)
+  accessory.getService(Service.Lightbulb)
   .getCharacteristic(Characteristic.Brightness)
-  .on('get', this.getRatio.bind(this, path + '.state'))
+  .on('get', this.getRatio.bind(this, accessory.context.path + '.state'))
   .on('set', function(value, callback) {
-    platform.log(`Set dimmer ${accessoryName}.Brightness to ${value}%`)
-    platform.SetRatio(identifier, value)
+    platform.log(`Set dimmer ${accessory.displayName}.Brightness to ${value}%`)
+    platform.SetRatio(accessory.context.identifier, value)
     callback();
   });
-
-  this.accessories.push(newAccessory);
-  this.api.registerPlatformAccessories("homebridge-signalk", "SignalK", [newAccessory]);
+  console.log('D servcied added');
 }
 
-// Add Switch accessory
-SignalKPlatform.prototype.addSwitchAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, isNewAccessory) {
-  var platform = this;
-  var uuid;
-
-  uuid = UUIDGen.generate(accessoryName);
-
-  this.log(`Add Switch Accessory ${accessoryName}: ${path}, ${uuid}`);
-
-  var newAccessory = new Accessory(accessoryName, uuid);
-  newAccessory.on('identify', function(paired, callback) {
-    platform.log(newAccessory.displayName, "Identify!");
-    callback();
-  });
-  // Plugin can save context on accessory to help restore accessory in configureAccessory()
-  newAccessory.context.identifier = identifier
-  newAccessory.context.path = path
-  newAccessory.context.manufacturer = manufacturer
-  newAccessory.context.model = model
-  newAccessory.context.serialnumber = serialnumber
-
-  // Add Device Information for EmpirBus NTX Dimmer
-  newAccessory.getService(Service.AccessoryInformation)
-    .setCharacteristic(Characteristic.Manufacturer, manufacturer)
-    .setCharacteristic(Characteristic.Model, model)
-    .setCharacteristic(Characteristic.SerialNumber, serialnumber);
+// Add services for Switch to exist accessory object
+SignalKPlatform.prototype.addSwitchServices = function(accessory) {
 
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
-  newAccessory.addService(Service.Switch, accessoryName)
+  accessory.getService(Service.Switch)
   .getCharacteristic(Characteristic.On)
-  .on('get', this.getOnOff.bind(this, path + '.state'))
+  .on('get', this.getOnOff.bind(this, accessory.context.path + '.state'))
   .on('set', function(value, callback) {
-    platform.log(`Set switch ${accessoryName}.state to ${value}`)
-    platform.setOnOff(identifier, value)
+    platform.log(`Set switch ${accessory.displayName}.state to ${value}`)
+    platform.setOnOff(accessory.context.identifier, value)
     callback();
-  })
-
-  this.accessories.push(newAccessory);
-  if (isNewAccessory) { this.api.registerPlatformAccessories("homebridge-signalk", "SignalK", [newAccessory])};
+  });
 }
+
+// // Add Switch accessory
+// SignalKPlatform.prototype.addSwitchAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, isNewAccessory) {
+//   var platform = this;
+//   var uuid;
+//
+//   uuid = UUIDGen.generate(accessoryName);
+//
+//   this.log(`Add Switch Accessory ${accessoryName}: ${path}, ${uuid}`);
+//
+//   var newAccessory = new Accessory(accessoryName, uuid);
+//   newAccessory.on('identify', function(paired, callback) {
+//     platform.log(newAccessory.displayName, "Identify!");
+//     callback();
+//   });
+//   // Plugin can save context on accessory to help restore accessory in configureAccessory()
+//   newAccessory.context.identifier = identifier
+//   newAccessory.context.path = path
+//   newAccessory.context.manufacturer = manufacturer
+//   newAccessory.context.model = model
+//   newAccessory.context.serialnumber = serialnumber
+//
+//   // Add Device Information for EmpirBus NTX Dimmer
+//   newAccessory.getService(Service.AccessoryInformation)
+//     .setCharacteristic(Characteristic.Manufacturer, manufacturer)
+//     .setCharacteristic(Characteristic.Model, model)
+//     .setCharacteristic(Characteristic.SerialNumber, serialnumber);
+//
+//   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
+//   newAccessory.addService(Service.Switch, accessoryName)
+//   .getCharacteristic(Characteristic.On)
+//   .on('get', this.getOnOff.bind(this, path + '.state'))
+//   .on('set', function(value, callback) {
+//     platform.log(`Set switch ${accessoryName}.state to ${value}`)
+//     platform.setOnOff(identifier, value)
+//     callback();
+//   })
+//
+//   this.accessories.push(newAccessory);
+//   if (isNewAccessory) { this.api.registerPlatformAccessories("homebridge-signalk", "SignalK", [newAccessory])};
+// }
 
 
 SignalKPlatform.prototype.updateAccessoriesReachability = function() {
@@ -427,16 +434,9 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         var manufacturer = controls[device].manufacturer.name.value || "EmpirBus";
         var model = controls[device].manufacturer.model.value || "NXT DCM";
 
-        switch(devicetype) {
-          case 'switch':
-            this.addSwitchAccessory(displayName, device, path, manufacturer, model, controls[device].name.value);
-            // updateSubscriptions.push(displayName, device, path);
-            break;
-          case 'dimmer':
-            this.addDimmerAccessory(displayName, device, path, manufacturer, model, controls[device].name.value);
-            // updateSubscriptions.push(displayName, device, path);
-          break;
-        }
+        this.addAccessory(displayName, device, path, manufacturer, model, controls[device].name.value, controlsPath, devicetype);
+        // updateSubscriptions.push(displayName, device, path);
+
       }
     });
   }
