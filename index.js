@@ -82,10 +82,23 @@ function SignalKPlatform(log, config, api) {
       // Platform Plugin should only register new accessory that doesn't exist in homebridge after this event.
       // Or start discover new accessories.
       this.api.on('didFinishLaunching', function() {
-        platform.log("Did finish launching, looking for new devices");
+        // Remove not reachable accessories: cached accessories no more present in Signal K
+        platform.log("Did finish launching, removing unreachable devices");
+        console.log("check", this.accessories); // ---------------------------------------------------------------- <<<<<<<<<<
 
+        _.keys(this.accessories).forEach(device => {
+console.log("check", device); // ---------------------------------------------------------------- <<<<<<<<<<
+console.log("check", this.accessories[device]); // ---------------------------------------------------------------- <<<<<<<<<<
+          if (!this.accessories[device].reachable) {
+            this.log(`Removing unreachable device ${this.accessories[device].displayName}`)
+            this.removeAccessory(this.accessories[device]);
+          }
+        });
+
+        // Addd new accessories in Signal K
+        platform.log("Looking for new accessories");
         this.autodetectNewAccessories()
-//        this.InitiatePolling(url + controlsPath.replace(/\./g, '/'))
+        // this.InitiatePolling(url + controlsPath.replace(/\./g, '/'))
 
       }.bind(this));
   }
@@ -98,12 +111,18 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
   this.log(accessory.displayName, "Configure Accessory");
   var platform = this;
 
-  console.log(accessory);
-
   // Set the accessory to reachable if plugin can currently process the accessory,
   // otherwise set to false and update the reachability later by invoking
   // accessory.updateReachability()
-  accessory.reachable = true;
+  this.checkKey(accessory.context.path, (error, result) => {
+    if (error) {
+      platform.log(`${accessory.displayName} not reachable`);
+      accessory.reachable = false;
+    } else {
+      platform.log(`${accessory.displayName} is reachable`);
+      accessory.reachable = true;
+    }
+  })
 
   // Add Device Services
   switch(accessory.context.devicetype) {
@@ -114,20 +133,6 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
         this.addDimmerServices(accessory);
       break;
   }
-
-  // accessory.on('identify', function(paired, callback) {
-  //   platform.log(accessory.displayName, "Identify!!!");
-  //   callback();
-  // });
-  //
-  // if (accessory.getService(Service.Lightbulb)) {
-  //   accessory.getService(Service.Lightbulb)
-  //   .getCharacteristic(Characteristic.On)
-  //   .on('set', function(value, callback) {
-  //     platform.log(accessory.displayName, "Light -> " + value);
-  //     callback();
-  //   });
-  // }
 
   this.accessories.push(accessory);
 }
@@ -283,7 +288,7 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
   this.api.registerPlatformAccessories("homebridge-signalk", "SignalK", [newAccessory]);
 }
 
-// Add services for Dimmer to exist accessory object
+// Add services for Dimmer to existing accessory object
 SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   var platform = this;
 
@@ -326,8 +331,9 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
 
 }
 
-// Add services for Switch to exist accessory object
+// Add services for Switch to existing accessory object
 SignalKPlatform.prototype.addSwitchServices = function(accessory) {
+  var platform = this;
 
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   accessory.getService(Service.Switch)
@@ -390,28 +396,15 @@ SignalKPlatform.prototype.updateAccessoriesReachability = function() {
   }
 }
 
-// Sample function to show how developer can remove accessory dynamically from outside event
-SignalKPlatform.prototype.removeAccessory = function() {
-  this.log("Remove Accessory");
-  this.api.unregisterPlatformAccessories("homebridge-signalk", "SignalK", this.accessories);
+// Remove accessory
+SignalKPlatform.prototype.removeAccessory = function(accessory) {
+  this.log('Remove accessory', accessory.displayName);
+  this.api.unregisterPlatformAccessories("homebridge-signalk", "SignalK", [accessory]);
 
-  this.accessories = [];
-}
-
-SignalKPlatform.prototype.updateAccessoriesReachability = function() {
-  this.log("Update Reachability");
-  for (var index in this.accessories) {
-    var accessory = this.accessories[index];
-    accessory.updateReachability(false);
-  }
-}
-
-// Sample function to show how developer can remove accessory dynamically from outside event
-SignalKPlatform.prototype.removeAccessory = function() {
-  this.log("Remove Accessory");
-  this.api.unregisterPlatformAccessories("homebridge-signalk", "SignalK", this.accessories);
-
-  this.accessories = [];
+  _.remove(this.accessories, function(a) {
+console.log(a.UUID, accessory.UUID); // ---------------------------------------------------------------- <<<<<<<<<<
+    return a.UUID == accessory.UUID;
+  });
 }
 
 
@@ -484,12 +477,12 @@ SignalKPlatform.prototype.getValue = function(path, cb, conversion) {
   this.log(`GET ${url}`)
   request(url,
           (error, response, body) => {          // FIXME: Errorhandling crashes
-//            this.log(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
-            this.log(`response: ${body} ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
             if ( error ) {
+              this.log(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
               cb(error, null)
             } else if ( response.statusCode != 200 ) {
-              cb(new Error(`invalid response ${response.statusCode}`))
+              this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
+              cb(new Error(`invalid response ${response.statusCode}`), null)
             } else {
               cb(null, conversion(body))
             }
@@ -504,8 +497,14 @@ SignalKPlatform.prototype.getRatio = function(path, callback) {
 
 // Returns the state of path as boolean
 SignalKPlatform.prototype.getOnOff = function(path, callback) {
-    this.getValue(path + '.value', callback,
+  this.getValue(path + '.value', callback,
                 (body) => (body == '"on"') || (Number(body) > 0))
+}
+
+// Returns true if device keys are still present
+SignalKPlatform.prototype.checkKey = function(path, callback) {
+  this.getValue(path, callback,
+              (body) => body)
 }
 
 
@@ -518,11 +517,11 @@ SignalKPlatform.prototype.setValue = function(device, value, cb) {
            method: 'PUT'
           },
           (error, response, body) => {          // FIXME: Errorhandling crashes
-//            this.log(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
-            this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
             if ( error ) {
+              this.log(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
               cb(error, null)
             } else if ( response.statusCode != 200 ) {
+              this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error(`invalid response ${response.statusCode}`), null)
             } else {
 //              cb(null, null)
@@ -541,80 +540,6 @@ SignalKPlatform.prototype.setOnOff = function(device, value, callback) {
   value = (value === true || value === "true") ? 'on' : 'off';
   this.setValue(device, value, callback);
 }
-
-// - - - - - - - - - - - - - - - Legacy functions  - - - - - - - - - - - - - -
-
-
-// - - - - - - - SignalKAccessory - - - - - - -
-
-// function SignalKAccessory(log, url, config, name) {
-//   log("SignalKAccessory called");
-//   this.log = log;
-//   this.name = name;
-//   this.config = config;
-//   this.url = url;
-// }
-//
-// // Services definition
-//
-// SignalKAccessory.prototype.getServices = function(callback) {
-//   console.log('Get Services called');
-//   return this.services
-// }
-
-// - - - - - - - Add Services - - - - - - -
-//
-// SignalKAccessory.prototype.addLightbulbService = function(name, subtype, path) {
-//   if ( !this.ingoredPath(path) ) {
-//     return null;
-//   }
-//   this.log(`Add lightbulb "${name}": ${subtype}, ${path}`)
-//   var service = new Service.Lightbulb(name, subtype)
-//
-//   var that = this
-//   service.getCharacteristic(Characteristic.On)
-//     .on('get', this.getOnOff.bind(this, path + '.state'))
-//     .on('set', function(value, callback) {
-//       that.log(`Set dimmer ${name}.state to ${value}`)
-//       that.setOnOff(subtype, value)
-//       callback();
-//     });
-//
-//     service.getCharacteristic(Characteristic.Brightness)
-//       .on('get', this.getRatio.bind(this, path + '.state'))
-//       .on('set', function(value, callback) {
-//         that.log(`Set dimmer ${name}.Brightness to ${value}`)
-//         that.SetRatio(subtype, value)
-//         callback();
-//       });
-//
-//   service.setCharacteristic(Characteristic.Name, name);
-//
-//   return service;
-// }
-//
-//
-// SignalKAccessory.prototype.addSwitchService = function(name, subtype, path) {
-//   if ( !this.ingoredPath(path) ) {
-//     return null;
-//   }
-//   this.log(`Add switch "${name}": ${subtype}, ${path}`)
-//   var service = new Service.Switch(name, subtype)
-//
-//   var that = this
-//   service.getCharacteristic(Characteristic.On)
-//     .on('get', this.getOnOff.bind(this, path + '.state'))
-//     .on('set', function(value, callback) {
-//       that.log(`Set switch ${name}.state to ${value}`)
-//       that.setOnOff(subtype, value)
-//       callback();
-//     });
-//   service.setCharacteristic(Characteristic.Name, name);
-//
-//   return service;
-// }
-//
-//
 
 
 // - - - - - - - API Status polling - - - - - - -
