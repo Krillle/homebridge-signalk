@@ -45,7 +45,7 @@ function SignalKPlatform(log, config, api) {
   var platform = this;
   this.log = log;
   this.config = config;
-  this.accessories = [];
+  this.accessories = new Map();
 
   this.url = ( config.url.charAt(config.url.length-1) == '/' ) ?
     config.url : config.url + '/'  // Append "/" to URL if missing
@@ -84,15 +84,15 @@ function SignalKPlatform(log, config, api) {
       this.api.on('didFinishLaunching', function() {
         // Remove not reachable accessories: cached accessories no more present in Signal K
         platform.log("Did finish launching, removing unreachable devices");
-        console.log("check", this.accessories); // ---------------------------------------------------------------- <<<<<<<<<<
 
-        _.keys(this.accessories).forEach(device => {
-console.log("check", device); // ---------------------------------------------------------------- <<<<<<<<<<
-console.log("check", this.accessories[device]); // ---------------------------------------------------------------- <<<<<<<<<<
-          if (!this.accessories[device].reachable) {
-            this.log(`Removing unreachable device ${this.accessories[device].displayName}`)
-            this.removeAccessory(this.accessories[device]);
-          }
+        this.accessories.forEach((accessory, key, map) => {
+          this.checkKey(accessory.context.path, (error, result) => {
+            if (error) {
+              platform.log(`${accessory.displayName} still not reachable`);
+              this.log(`Removing unreachable device ${accessory.displayName}`)
+              this.removeAccessory(accessory);
+            }
+          })
         });
 
         // Addd new accessories in Signal K
@@ -134,7 +134,7 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
       break;
   }
 
-  this.accessories.push(accessory);
+  this.accessories.set(accessory.UUID, accessory);
 }
 
 
@@ -284,7 +284,7 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
       break;
   }
 
-  this.accessories.push(newAccessory);
+  this.accessories.set(uuid, newAccessory);
   this.api.registerPlatformAccessories("homebridge-signalk", "SignalK", [newAccessory]);
 }
 
@@ -390,8 +390,7 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
 
 SignalKPlatform.prototype.updateAccessoriesReachability = function() {
   this.log("Update Reachability");
-  for (var index in this.accessories) {
-    var accessory = this.accessories[index];
+  for (var accessory in this.accessories) {
     accessory.updateReachability(false);
   }
 }
@@ -400,13 +399,8 @@ SignalKPlatform.prototype.updateAccessoriesReachability = function() {
 SignalKPlatform.prototype.removeAccessory = function(accessory) {
   this.log('Remove accessory', accessory.displayName);
   this.api.unregisterPlatformAccessories("homebridge-signalk", "SignalK", [accessory]);
-
-  _.remove(this.accessories, function(a) {
-console.log(a.UUID, accessory.UUID); // ---------------------------------------------------------------- <<<<<<<<<<
-    return a.UUID == accessory.UUID;
-  });
+  this.accessories.delete(accessory.UUID);
 }
-
 
 // - - - - - - - - - - - - - - - Signal K specific - - - - - - - - - - - - - -
 
