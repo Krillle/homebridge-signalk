@@ -18,6 +18,22 @@ const controlsPath = 'electrical.controls'
 const empirBusIdentifier = 'empirBusNxt'
 const putPath = '/plugins/signalk-empirbus-nxt/controls/'
 
+
+// Environment temperatures:
+//
+const temperaturePath = 'environment'
+const temperatures = [
+  { key : 'outside.temperature' , displayName : 'Outside' },
+  { key : 'inside.temperature' , displayName : 'Inside' },
+  { key : 'inside.engineRoom.temperature' , displayName : 'Engine Room' },
+  { key : 'inside.mainCabin.temperature' , displayName : 'Main Cabin' },
+  { key : 'inside.refrigerator.temperature' , displayName : 'Refrigerator' },
+  { key : 'inside.freezer.temperature' , displayName : 'Freezer' },
+  { key : 'inside.heating.temperature' , displayName : 'Heating' },
+  { key : 'water.temperature' , displayName : 'Water' }
+];
+
+
 var updateSubscriptions = []; // Collects the devices to update in polling squence // FIXME
 
 
@@ -82,22 +98,22 @@ function SignalKPlatform(log, config, api) {
       // Platform Plugin should only register new accessory that doesn't exist in homebridge after this event.
       // Or start discover new accessories.
       this.api.on('didFinishLaunching', function() {
-        // Remove not reachable accessories: cached accessories no more present in Signal K
-        platform.log("Did finish launching, removing unreachable devices");
+        platform.log("Did finish launching");
 
-        this.accessories.forEach((accessory, key, map) => {
-          this.checkKey(accessory.context.path, (error, result) => {
-            if (error) {
-              platform.log(`${accessory.displayName} still not reachable`);
-              this.log(`Removing unreachable device ${accessory.displayName}`)
-              this.removeAccessory(accessory);
+        // Remove not reachable accessories: cached accessories no more present in Signal K
+        platform.log("Removing unreachable devices");
+        platform.accessories.forEach((accessory, key, map) => {
+          platform.checkKey(accessory.context.path, (error, result) => {
+            if (error && error.message == 'device not present: 404') {
+              platform.log(`${accessory.displayName} not present`);
+              platform.removeAccessory(accessory);
             }
           })
         });
 
         // Addd new accessories in Signal K
         platform.log("Looking for new accessories");
-        this.autodetectNewAccessories()
+        platform.autodetectNewAccessories()
         // this.InitiatePolling(url + controlsPath.replace(/\./g, '/'))
 
       }.bind(this));
@@ -108,7 +124,7 @@ function SignalKPlatform(log, config, api) {
 // Developer can configure accessory at here (like setup event handler).
 // Update current value.
 SignalKPlatform.prototype.configureAccessory = function(accessory) {
-  this.log(accessory.displayName, "Configure Accessory");
+  this.log("Configure Accessory", accessory.displayName);
   var platform = this;
 
   // Set the accessory to reachable if plugin can currently process the accessory,
@@ -130,11 +146,14 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
       this.addSwitchServices(accessory);
       break;
     case 'dimmer':
-        this.addDimmerServices(accessory);
+      this.addDimmerServices(accessory);
+      break;
+    case 'temperature':
+      this.addTemperatureServices(accessory);
       break;
   }
 
-  this.accessories.set(accessory.UUID, accessory);
+  this.accessories.set(accessory.context.path, accessory);
 }
 
 
@@ -282,9 +301,13 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
       newAccessory.addService(Service.Lightbulb, accessoryName)
       this.addDimmerServices(newAccessory);
       break;
+    case 'temperature':
+      newAccessory.addService(Service.TemperatureSensor, accessoryName)
+      this.addTemperatureServices(newAccessory);
+      break;
   }
 
-  this.accessories.set(uuid, newAccessory);
+  this.accessories.set(path, newAccessory);
   this.api.registerPlatformAccessories("homebridge-signalk", "SignalK", [newAccessory]);
 }
 
@@ -346,46 +369,15 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
   });
 }
 
-// // Add Switch accessory
-// SignalKPlatform.prototype.addSwitchAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, controlsPath, devicetype) {
-//   var platform = this;
-//   var uuid;
-//
-//   uuid = UUIDGen.generate(accessoryName);
-//
-//   this.log(`Add Switch Accessory ${accessoryName}: ${path}, ${uuid}`);
-//
-//   var newAccessory = new Accessory(accessoryName, uuid);
-//   newAccessory.on('identify', function(paired, callback) {
-//     platform.log(newAccessory.displayName, "Identify!");
-//     callback();
-//   });
-//   // Plugin can save context on accessory to help restore accessory in configureAccessory()
-//   newAccessory.context.identifier = identifier
-//   newAccessory.context.path = path
-//   newAccessory.context.manufacturer = manufacturer
-//   newAccessory.context.model = model
-//   newAccessory.context.serialnumber = serialnumber
-//
-//   // Add Device Information for EmpirBus NTX Dimmer
-//   newAccessory.getService(Service.AccessoryInformation)
-//     .setCharacteristic(Characteristic.Manufacturer, manufacturer)
-//     .setCharacteristic(Characteristic.Model, model)
-//     .setCharacteristic(Characteristic.SerialNumber, serialnumber);
-//
-//   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
-//   newAccessory.addService(Service.Switch, accessoryName)
-//   .getCharacteristic(Characteristic.On)
-//   .on('get', this.getOnOff.bind(this, path + '.state'))
-//   .on('set', function(value, callback) {
-//     platform.log(`Set switch ${accessoryName}.state to ${value}`)
-//     platform.setOnOff(identifier, value)
-//     callback();
-//   })
-//
-//   this.accessories.push(newAccessory);
-//   this.api.registerPlatformAccessories("homebridge-signalk", "SignalK", [newAccessory]);
-// }
+// Add services for Temperature Sensor to existing accessory object
+SignalKPlatform.prototype.addTemperatureServices = function(accessory) {
+  var platform = this;
+
+  // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
+  accessory.getService(Service.TemperatureSensor)
+  .getCharacteristic(Characteristic.CurrentTemperature)
+  .on('get', this.getTemperature.bind(this, accessory.context.path));
+}
 
 
 SignalKPlatform.prototype.updateAccessoriesReachability = function() {
@@ -399,7 +391,7 @@ SignalKPlatform.prototype.updateAccessoriesReachability = function() {
 SignalKPlatform.prototype.removeAccessory = function(accessory) {
   this.log('Remove accessory', accessory.displayName);
   this.api.unregisterPlatformAccessories("homebridge-signalk", "SignalK", [accessory]);
-  this.accessories.delete(accessory.UUID);
+  this.accessories.delete(accessory.context.path);
 }
 
 // - - - - - - - - - - - - - - - Signal K specific - - - - - - - - - - - - - -
@@ -426,16 +418,15 @@ SignalKPlatform.prototype.processFullTree = function(body) {
 
   var tree = JSON.parse(body);
 
-  this.log("Adding electrical controls (EmpirBus NXT)");
   // Add electrical controls (EmpirBus NXT)
+  this.log("Adding electrical controls (EmpirBus NXT)");
   var controls = _.get(tree, controlsPath);
-
   if ( controls ) {
     _.keys(controls).forEach(device => {
 
       if (device.slice(0,empirBusIdentifier.length) == empirBusIdentifier
             && this.noignoredPath(`${controlsPath}.${device}`)
-            && typeof _.find(this.accessories, (entry) => entry.context.identifier == device) == 'undefined') {
+            && !this.accessories.has(`${controlsPath}.${device}`) ) {
         var path = `${controlsPath}.${device}`;
         var fallbackName = controls[device].name.value || controls[device].meta.displayName.value ;
         var displayName = this.getName(path, fallbackName);
@@ -449,6 +440,29 @@ SignalKPlatform.prototype.processFullTree = function(body) {
       }
     });
   }
+
+  // Add temperatures
+  this.log("Adding environment temperatures");
+  var environment = _.get(tree, temperaturePath);
+  if ( environment ) {
+    temperatures.forEach(device => {
+
+      if ( device.key == 'water.temperature'         // FIXME: Check if present, invoke via callback
+            && this.noignoredPath(`${temperaturePath}.${device.key}`)
+            && !this.accessories.has(`${temperaturePath}.${device.key}`) ) {
+        var path = `${temperaturePath}.${device.key}`;
+        var displayName = this.getName(path, device.displayName);
+        var devicetype = 'temperature';
+        var manufacturer = 'NMEA';
+        var model = `${device.displayName} Temperature Sensor`;
+
+        this.addAccessory(displayName, device.key, path, manufacturer, model, displayName, temperaturePath, devicetype);
+        // updateSubscriptions.push(displayName, device, path);
+
+      }
+    });
+  }
+
 }
 
 // - - - - - - - Helper functions - - - - - - - - - - - - - - - - - - - -
@@ -468,19 +482,28 @@ SignalKPlatform.prototype.noignoredPath = function(path) {
 // Reads value for path from Signal K API
 SignalKPlatform.prototype.getValue = function(path, cb, conversion) {
   var url = this.url + path.replace(/\./g, '/')
-  this.log(`GET ${url}`)
+//  this.log(`GET ${url}`)
   request(url,
-          (error, response, body) => {          // FIXME: Errorhandling crashes
+          (error, response, body) => {
             if ( error ) {
-              this.log(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
+//            this.log(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
               cb(error, null)
+            } else if ( response.statusCode == 404 ) {
+//              this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
+              cb(new Error('device not present: 404'), null)  // removeAccessory relies on that error text
             } else if ( response.statusCode != 200 ) {
-              this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
+//              this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error(`invalid response ${response.statusCode}`), null)
             } else {
               cb(null, conversion(body))
             }
           })
+}
+
+// Checks if device keys are still present
+SignalKPlatform.prototype.checkKey = function(path, callback) {
+  this.getValue(path, callback,
+              (body) => body)
 }
 
 // Returns the value for path in %
@@ -495,10 +518,10 @@ SignalKPlatform.prototype.getOnOff = function(path, callback) {
                 (body) => (body == '"on"') || (Number(body) > 0))
 }
 
-// Returns true if device keys are still present
-SignalKPlatform.prototype.checkKey = function(path, callback) {
-  this.getValue(path, callback,
-              (body) => body)
+// Returns temperature in °C
+SignalKPlatform.prototype.getTemperature = function(path, callback) {
+  this.getValue(path + '.value', callback,
+                (body) =>  Number(body) - 273.15)
 }
 
 
@@ -510,7 +533,7 @@ SignalKPlatform.prototype.setValue = function(device, value, cb) {
   request({url: url,
            method: 'PUT'
           },
-          (error, response, body) => {          // FIXME: Errorhandling crashes
+          (error, response, body) => {
             if ( error ) {
               this.log(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
               cb(error, null)
@@ -560,16 +583,3 @@ SignalKPlatform.prototype.InitiatePolling = function(pollUrl) {
     console.log("Emitter errored: %s. with data %j", err, data);
   });
 };
-
-
-SignalKPlatform.prototype.manageValue = function(change) {
-    for (let i = 0; i < this.platform.updateSubscriptions.length; i++) {
-        let subscription = this.platform.updateSubscriptions[i];
-        if (subscription.id == change.id && subscription.property == "value") {
-            this.platform.log("Updating value for device: ", `${subscription.id}  parameter: ${subscription.characteristic.displayName}, value: ${change.value}`);
-            let getFunction = this.platform.getFunctions.getFunctionsMapping.get(subscription.characteristic.UUID);
-            if (getFunction)
-                getFunction.call(this.platform.getFunctions, null, subscription.characteristic, subscription.service, null, change);
-        }
-    }
-}
