@@ -19,18 +19,26 @@ const empirBusIdentifier = 'empirBusNxt'
 const putPath = '/plugins/signalk-empirbus-nxt/controls/'
 
 
-// Environment temperatures:
+// Environment temperatures + humidity:
 //
-const temperaturePath = 'environment'
-const temperatures = [
-  { key : 'outside.temperature' , displayName : 'Outside' },
-  { key : 'inside.temperature' , displayName : 'Inside' },
-  { key : 'inside.engineRoom.temperature' , displayName : 'Engine Room' },
-  { key : 'inside.mainCabin.temperature' , displayName : 'Main Cabin' },
-  { key : 'inside.refrigerator.temperature' , displayName : 'Refrigerator' },
-  { key : 'inside.freezer.temperature' , displayName : 'Freezer' },
-  { key : 'inside.heating.temperature' , displayName : 'Heating' },
-  { key : 'water.temperature' , displayName : 'Water' }
+const environmentPath = 'environment'
+const environments = [
+  { key : 'outside.temperature' , displayName : 'Outside' , devicetype : 'temperature'},
+  { key : 'inside.temperature' , displayName : 'Inside' , devicetype : 'temperature'},
+  { key : 'inside.engineRoom.temperature' , displayName : 'Engine Room' , devicetype : 'temperature'},
+  { key : 'inside.mainCabin.temperature' , displayName : 'Main Cabin' , devicetype : 'temperature'},
+  { key : 'inside.refrigerator.temperature' , displayName : 'Refrigerator' , devicetype : 'temperature'},
+  { key : 'inside.freezer.temperature' , displayName : 'Freezer' , devicetype : 'temperature'},
+  { key : 'inside.heating.temperature' , displayName : 'Heating' , devicetype : 'temperature'},
+  { key : 'water.temperature' , displayName : 'Water' , devicetype : 'temperature'},
+
+  { key : 'outside.humidity' , displayName : 'Outside' , devicetype : 'humidity'},
+  { key : 'inside.humidity' , displayName : 'Inside' , devicetype : 'humidity'},
+  { key : 'inside.engineRoom.relativeHumidity' , displayName : 'Engine Room' , devicetype : 'humidity'},
+  { key : 'inside.mainCabin.relativeHumidity' , displayName : 'Main Cabin' , devicetype : 'humidity'},
+  { key : 'inside.refrigerator.relativeHumidity' , displayName : 'Refrigerator' , devicetype : 'humidity'},
+  { key : 'inside.freezer.relativeHumidity' , displayName : 'Freezer' , devicetype : 'humidity'},
+  { key : 'inside.heating.relativeHumidity' , displayName : 'Heating' , devicetype : 'humidity'}
 ];
 
 
@@ -151,7 +159,11 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
     case 'temperature':
       this.addTemperatureServices(accessory);
       break;
-  }
+    case 'humidity':
+      newAccessory.addService(Service.HumiditySensor, accessoryName)
+      this.addHumidityServices(newAccessory);
+      break;
+}
 
   this.accessories.set(accessory.context.path, accessory);
 }
@@ -305,6 +317,10 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
       newAccessory.addService(Service.TemperatureSensor, accessoryName)
       this.addTemperatureServices(newAccessory);
       break;
+    case 'humidity':
+      newAccessory.addService(Service.HumiditySensor, accessoryName)
+      this.addHumidityServices(newAccessory);
+      break;
   }
 
   this.accessories.set(path, newAccessory);
@@ -379,6 +395,16 @@ SignalKPlatform.prototype.addTemperatureServices = function(accessory) {
   .on('get', this.getTemperature.bind(this, accessory.context.path));
 }
 
+// Add services for Humidity Sensor to existing accessory object
+SignalKPlatform.prototype.addHumidityServices = function(accessory) {
+  var platform = this;
+
+  // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
+  accessory.getService(Service.HumiditySensor)
+  .getCharacteristic(Characteristic.CurrentRelativeHumidity)
+  .on('get', this.getRatio.bind(this, accessory.context.path));
+}
+
 
 SignalKPlatform.prototype.updateAccessoriesReachability = function() {
   this.log("Update Reachability");
@@ -440,29 +466,27 @@ SignalKPlatform.prototype.processFullTree = function(body) {
       }
     });
   }
+  this.log('Done');
 
-  // Add temperatures
-  this.log("Adding environment temperatures");
-  var environment = _.get(tree, temperaturePath);
-  if ( environment ) {
-    temperatures.forEach(device => {
+  // Add environments
+  this.log("Adding environment temperature and humidity");
+  environments.forEach(device => {
+    var path = `${environmentPath}.${device.key}`;
+    var environment = _.get(tree, path);
+    if ( environment
+          && this.noignoredPath(path)
+          && !this.accessories.has(path) ) {
 
-      if ( device.key == 'water.temperature'         // FIXME: Check if present, invoke via callback
-            && this.noignoredPath(`${temperaturePath}.${device.key}`)
-            && !this.accessories.has(`${temperaturePath}.${device.key}`) ) {
-        var path = `${temperaturePath}.${device.key}`;
-        var displayName = this.getName(path, device.displayName);
-        var devicetype = 'temperature';
-        var manufacturer = 'NMEA';
-        var model = `${device.displayName} Temperature Sensor`;
+      var displayName = this.getName(path, device.displayName);
+      var devicetype = device.devicetype;
+      var manufacturer = 'NMEA';
+      var model = `${device.displayName} Temperature Sensor`;
 
-        this.addAccessory(displayName, device.key, path, manufacturer, model, displayName, temperaturePath, devicetype);
-        // updateSubscriptions.push(displayName, device, path);
-
-      }
-    });
-  }
-
+      this.addAccessory(displayName, device.key, path, manufacturer, model, displayName, environmentPath, devicetype);
+      // updateSubscriptions.push(displayName, device, path);
+    }
+  });
+  this.log('Done');
 }
 
 // - - - - - - - Helper functions - - - - - - - - - - - - - - - - - - - -
