@@ -41,6 +41,12 @@ const environments = [
   { key : 'inside.heating.relativeHumidity' , displayName : 'Heating' , devicetype : 'humidity'}
 ];
 
+// Tanks
+const tanksPath = 'tanks'
+
+// Batteries and chargers
+const batteriesPath = 'electrical.batteries'
+const inverterChargerPath = 'electrical.inverterCharger'
 
 var updateSubscriptions = []; // Collects the devices to update in polling squence // FIXME
 
@@ -109,7 +115,7 @@ function SignalKPlatform(log, config, api) {
         platform.log("Did finish launching");
 
         // Remove not reachable accessories: cached accessories no more present in Signal K
-        platform.log("Removing unreachable devices");
+        platform.log("Checking for unreachable devices");
         platform.accessories.forEach((accessory, key, map) => {
           platform.checkKey(accessory.context.path, (error, result) => {
             if (error && error.message == 'device not present: 404') {
@@ -122,7 +128,9 @@ function SignalKPlatform(log, config, api) {
         // Addd new accessories in Signal K
         platform.log("Looking for new accessories");
         platform.autodetectNewAccessories()
-        // this.InitiatePolling(url + controlsPath.replace(/\./g, '/'))
+
+        // Start accessories value updating
+        platform.InitiatePolling(platform.url)
 
       }.bind(this));
   }
@@ -160,10 +168,15 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
       this.addTemperatureServices(accessory);
       break;
     case 'humidity':
-      newAccessory.addService(Service.HumiditySensor, accessoryName)
-      this.addHumidityServices(newAccessory);
+      this.addHumidityServices(accessory);
       break;
-}
+    case 'tank':
+      this.addTankServices(accessory);
+      break;
+    case 'battery' || 'charger':
+      this.addBatteryServices(accessory);
+      break;
+  }
 
   this.accessories.set(accessory.context.path, accessory);
 }
@@ -321,6 +334,14 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
       newAccessory.addService(Service.HumiditySensor, accessoryName)
       this.addHumidityServices(newAccessory);
       break;
+    case 'tank':
+      newAccessory.addService(Service.LeakSensor, accessoryName)
+      this.addTankServices(newAccessory);
+      break;
+    case 'battery' || 'charger':
+      newAccessory.addService(Service.BatteryService, accessoryName)
+      this.addBatteryServices(newAccessory);
+      break;
   }
 
   this.accessories.set(path, newAccessory);
@@ -334,16 +355,18 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   accessory.on('identify', function(paired, callback) {
     platform.log(`Identifying Dimmer Accessory ${accessory.displayName} by off/on/off cycle`);
 
-    // FIXME: Get state before cycle
+    // FIXME: Get state of device before cycle
     // var stateBefore;
     // platform.getOnOff.bind(platform, path + '.state',(error,value)=> {stateBefore = value});
     // console.log(stateBefore);
 
     // Off/On/Off/Restore cycle
     platform.setOnOff(accessory.context.identifier, false);
-    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, true)}, 250);
-    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, false)}, 750);
-    // FIXME: Restore state before cycle
+    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, true), ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
+                   }, 250);
+    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, false), , ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
+                   }, 750);
+    // FIXME: Restore original state of device before cycle
     //  setTimeout(()=>{platform.setOnOff(identifier, stateBefore)}, 1000);
 
     callback();
@@ -355,7 +378,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   .on('get', this.getOnOff.bind(this, accessory.context.path + '.state'))
   .on('set', function(value, callback) {
     platform.log(`Set dimmer ${accessory.displayName}.state to ${value}`)
-    platform.setOnOff(accessory.context.identifier, value)
+    platform.setOnOff(accessory.context.identifier, value, ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
     callback();
   })
 
@@ -364,7 +387,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   .on('get', this.getRatio.bind(this, accessory.context.path + '.state'))
   .on('set', function(value, callback) {
     platform.log(`Set dimmer ${accessory.displayName}.Brightness to ${value}%`)
-    platform.SetRatio(accessory.context.identifier, value)
+    platform.SetRatio(accessory.context.identifier, value, ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
     callback();
   });
 
@@ -380,15 +403,15 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
   .on('get', this.getOnOff.bind(this, accessory.context.path + '.state'))
   .on('set', function(value, callback) {
     platform.log(`Set switch ${accessory.displayName}.state to ${value}`)
-    platform.setOnOff(accessory.context.identifier, value)
+    platform.setOnOff(accessory.context.identifier, value, ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
     callback();
   });
+
+//  updateSubscriptions.push(accessory, device, path);
 }
 
 // Add services for Temperature Sensor to existing accessory object
 SignalKPlatform.prototype.addTemperatureServices = function(accessory) {
-  var platform = this;
-
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   accessory.getService(Service.TemperatureSensor)
   .getCharacteristic(Characteristic.CurrentTemperature)
@@ -397,12 +420,32 @@ SignalKPlatform.prototype.addTemperatureServices = function(accessory) {
 
 // Add services for Humidity Sensor to existing accessory object
 SignalKPlatform.prototype.addHumidityServices = function(accessory) {
-  var platform = this;
-
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   accessory.getService(Service.HumiditySensor)
   .getCharacteristic(Characteristic.CurrentRelativeHumidity)
   .on('get', this.getRatio.bind(this, accessory.context.path));
+}
+
+SignalKPlatform.prototype.addTankServices = function(accessory) {
+  // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
+  accessory.getService(Service.LeakSensor)
+  .getCharacteristic(Characteristic.WaterLevel)
+  .on('get', this.getRatio.bind(this, accessory.context.path));
+}
+
+SignalKPlatform.prototype.addBatteryServices = function(accessory) {
+  // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
+  accessory.getService(Service.BatteryService)
+  .getCharacteristic(Characteristic.BatteryLevel)
+  .on('get', this.getRatio.bind(this, accessory.context.path + '.capacity.stateOfCharge'));
+
+  accessory.getService(Service.BatteryService)
+  .getCharacteristic(Characteristic.ChargingState)
+  .on('get', this.getChargingState.bind(this, accessory.context.path + '.chargingMode'));
+
+  accessory.getService(Service.BatteryService)
+  .getCharacteristic(Characteristic.StatusLowBattery)
+  .on('get', this.getStatusLowBattery.bind(this, accessory.context.path + ".voltage"));
 }
 
 
@@ -462,7 +505,6 @@ SignalKPlatform.prototype.processFullTree = function(body) {
 
         this.addAccessory(displayName, device, path, manufacturer, model, controls[device].name.value, controlsPath, devicetype);
         // updateSubscriptions.push(displayName, device, path);
-
       }
     });
   }
@@ -486,6 +528,71 @@ SignalKPlatform.prototype.processFullTree = function(body) {
       // updateSubscriptions.push(displayName, device, path);
     }
   });
+  this.log('Done');
+
+  // Add tanks
+  this.log("Adding tanks");
+  var tanks = _.get(tree, tanksPath);
+  if ( tanks ) {
+    _.keys(tanks).forEach(tankType => {
+      _.keys(tanks[tankType]).forEach(instance => {
+        var path = `${tanksPath}.${tankType}.${instance}`;
+        if (this.noignoredPath(path)
+              && !this.accessories.has(path) ) {
+
+          var displayName = _.get(instance, "meta.displayName") || this.getName(path, tankType);
+          var deviceType = 'tank';
+          var manufacturer = "NMEA"; // chargers[instance].manufacturer.name.value || "NMEA";
+          var model = tankType; // chargers[instance].manufacturer.model.value || "Charger";
+          var deviceKey = `${tankType}.${instance}`
+
+          this.addAccessory(displayName, deviceKey, path, manufacturer, model, deviceKey, controlsPath, deviceType);
+          // updateSubscriptions.push(displayName, device, path);
+        }
+      })
+    });
+  }
+  this.log('Done');
+
+  // Add batteries and chargers
+  this.log("Adding batteries");
+  var batteries = _.get(tree, batteriesPath);
+  if ( batteries ) {
+    _.keys(batteries).forEach(instance => {
+      var path = `${batteriesPath}.${instance}`;
+      if (this.noignoredPath(path)
+            && !this.accessories.has(path) ) {
+
+        var displayName = this.getName(path, `Battery ${instance}`);
+        var devicetype = 'battery';
+        var manufacturer = "NMEA"; // batteries[instance].manufacturer.name.value || "NMEA";
+        var model = "Battery"; // batteries[instance].manufacturer.model.value || "Battery";
+
+        this.addAccessory(displayName, instance, path, manufacturer, model, displayName, controlsPath, devicetype);
+        // updateSubscriptions.push(displayName, device, path);
+      }
+    });
+  }
+  this.log('Done');
+
+  this.log("Adding chargers");
+  var chargers = _.get(tree, inverterChargerPath);
+  if ( chargers ) {
+    _.keys(chargers).forEach(instance => {
+      var path = `${inverterChargerPath}.${instance}`;
+      if (this.noignoredPath(path)
+            && !this.accessories.has(path) ) {
+
+        var displayName = this.getName(path, `Charger ${instance}`);
+        var devicetype = 'charger';
+        var manufacturer = "NMEA"; // chargers[instance].manufacturer.name.value || "NMEA";
+        var model = "Charger"; // chargers[instance].manufacturer.model.value || "Charger";
+
+        this.addAccessory(displayName, instance, path, manufacturer, model, displayName, controlsPath, devicetype);
+        // updateSubscriptions.push(displayName, device, path);
+      }
+    });
+  }
   this.log('Done');
 }
 
@@ -548,6 +655,28 @@ SignalKPlatform.prototype.getTemperature = function(path, callback) {
                 (body) =>  Number(body) - 273.15)
 }
 
+const notChargingValues = [
+  'not charging',
+  'other',
+  'off',
+  'low power',
+  'fault'
+];
+
+SignalKPlatform.prototype.getChargingState = function(path, callback)  {
+  this.getValue(path + '.value', callback,
+                (body) =>  {
+                  return notChargingValues.indexOf(body) == -1 ? 1 : 0;
+                })
+}
+
+SignalKPlatform.prototype.getStatusLowBattery = function(path, callback) {
+  this.getValue(path + '.value', callback,
+                (body) =>  {
+                  return Number(body) < 11.5;  // FIXME: Low battery voltage 23V
+                })
+}
+
 
 // Writes value for path to Signal K API
 SignalKPlatform.prototype.setValue = function(device, value, cb) {
@@ -560,7 +689,7 @@ SignalKPlatform.prototype.setValue = function(device, value, cb) {
           (error, response, body) => {
             if ( error ) {
               this.log(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
-              cb(error, null)
+              cb(error, null)     // FIXME: Chrashes when Signal K not reachable. callback is missing
             } else if ( response.statusCode != 200 ) {
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error(`invalid response ${response.statusCode}`), null)
@@ -587,7 +716,7 @@ SignalKPlatform.prototype.setOnOff = function(device, value, callback) {
 
 SignalKPlatform.prototype.InitiatePolling = function(pollUrl) {
   console.log('Poll URL: ' + pollUrl);
-  emitter = pollingtoevent(function(callback) {
+  var emitter = pollingtoevent(function(callback) {
     request.get(pollUrl, function(err, req, data) {
       callback(err, data);
     });
@@ -597,6 +726,10 @@ SignalKPlatform.prototype.InitiatePolling = function(pollUrl) {
 
   emitter.on("longpoll", function(data) {
     console.log("longpoll emitted at %s, with data %j", Date.now());
+
+    var tree = JSON.parse(data);
+    console.log(_.get(tree, 'electrical.controls.empirBusNxt-instance0-switch7'+'.state.value'))
+
   });
 
   // emitter.on("poll", function(data) {
@@ -605,5 +738,54 @@ SignalKPlatform.prototype.InitiatePolling = function(pollUrl) {
   //
   emitter.on("error", function(err, data) {
     console.log("Emitter errored: %s. with data %j", err, data);
+
+    // for (var accessory in this.accessories) {
+    //   accessory.reachable = false;
+    // }
   });
 };
+
+// ------------- legacy ---------------
+
+// Update accessories values
+SignalKPlatform.prototype.updateAccessoriesValues = function() {
+  this.log("Updating device values");
+
+  this.accessories.forEach((accessory, key, map) => {
+    // Update respective device value
+    switch(accessory.context.devicetype) {
+      case 'switch':
+        this.updateSwitchServices(accessory);
+        break;
+    }
+  });
+}
+
+// Update services of Switch accessory object
+SignalKPlatform.prototype.updateSwitchServices = function(accessory) {
+  // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
+  service = accessory.getService(Service.Switch)
+  characteristic = service.getCharacteristic(Characteristic.On)
+
+  this.getOnOff.bind(this, accessory.context.path + '.state',
+                      (err, newValue) => {
+                        if (error) {
+                          this.log(error)
+                        } else {
+                          service.updateCharacteristic(characteristic, newValue)
+                        }
+                      }
+  )
+};
+
+//  updateSubscriptions.push(accessory, device, path);
+
+
+
+
+    //
+    // platform.checkKey(accessory.context.path, (error, result) => {
+    //   if (error && error.message == 'device not present: 404') {
+    //     platform.log(`${accessory.displayName} not present`);
+    //     platform.removeAccessory(accessory);
+    //   }
