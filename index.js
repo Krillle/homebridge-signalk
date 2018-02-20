@@ -2,7 +2,8 @@ const _ = require('lodash');
 var request = require('request');
 var http = require('http');
 var _url = require('url');
-var pollingtoevent = require("polling-to-event");
+var websocket = require("ws");
+// var pollingtoevent = require("polling-to-event");
 
 var Accessory, Service, Characteristic, UUIDGen;
 
@@ -17,6 +18,8 @@ var Accessory, Service, Characteristic, UUIDGen;
 const controlsPath = 'electrical.controls'
 const empirBusIdentifier = 'empirBusNxt'
 const putPath = '/plugins/signalk-empirbus-nxt/controls/'
+const urlPath = 'signalk/v1/api/vessels/self/'
+const wsPath = 'signalk/v1/stream?subscribe=none' // none will stream only the heartbeat, until the client issues subscribe messages in the WebSocket stream
 
 
 // Environment temperatures + humidity:
@@ -31,6 +34,7 @@ const environments = [
   { key : 'inside.freezer.temperature' , displayName : 'Freezer' , devicetype : 'temperature'},
   { key : 'inside.heating.temperature' , displayName : 'Heating' , devicetype : 'temperature'},
   { key : 'water.temperature' , displayName : 'Water' , devicetype : 'temperature'},
+  { key : 'cpu.temperature' , displayName : 'Raspberry Pi' , devicetype : 'temperature'},
 
   { key : 'outside.humidity' , displayName : 'Outside' , devicetype : 'humidity'},
   { key : 'inside.humidity' , displayName : 'Inside' , devicetype : 'humidity'},
@@ -77,8 +81,15 @@ function SignalKPlatform(log, config, api) {
   this.config = config;
   this.accessories = new Map();
 
-  this.url = ( config.url.charAt(config.url.length-1) == '/' ) ?
-    config.url : config.url + '/'  // Append "/" to URL if missing
+  this.url = 'http://' + config.host + '/' + urlPath;
+  this.ws = 'ws://' + config.host + '/' + wsPath;
+
+  // this.url = ( config.url.charAt(config.url.length-1) == '/' ) ?
+  //   config.url + urlPath : config.url + '/' + urlPath  // Append "/" to URL if missing
+  //
+  // this.ws = ( config.url.charAt(config.url.length-1) == '/' ) ?
+  //   config.url + wsPath : config.url + '/' + wsPath  // Append "/" to URL if missing
+
 
   // this.requestServer = http.createServer(function(request, response) {
   //   if (request.url === "/add") {
@@ -130,7 +141,7 @@ function SignalKPlatform(log, config, api) {
         platform.autodetectNewAccessories()
 
         // Start accessories value updating
-        platform.InitiatePolling(platform.url)
+        platform.InitiateWebSocket()
 
       }.bind(this));
   }
@@ -362,9 +373,9 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
 
     // Off/On/Off/Restore cycle
     platform.setOnOff(accessory.context.identifier, false);
-    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, true), ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
+    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, true), ()=> {console.log('FIXME: Device unreachable');} // FIXME: Device unreachable
                    }, 250);
-    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, false), , ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
+    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, false), ()=> {console.log('FIXME: Device unreachable');} // FIXME: Device unreachable
                    }, 750);
     // FIXME: Restore original state of device before cycle
     //  setTimeout(()=>{platform.setOnOff(identifier, stateBefore)}, 1000);
@@ -711,72 +722,102 @@ SignalKPlatform.prototype.setOnOff = function(device, value, callback) {
   this.setValue(device, value, callback);
 }
 
+// - - - - - - - WebSocket Status Update- - - - - - - - - - - - - - - - - -
 
-// - - - - - - - API Status polling - - - - - - -
+SignalKPlatform.prototype.InitiateWebSocket = function() {
+  console.log('WebSocket URL: ' + this.ws);
 
-SignalKPlatform.prototype.InitiatePolling = function(pollUrl) {
-  console.log('Poll URL: ' + pollUrl);
-  var emitter = pollingtoevent(function(callback) {
-    request.get(pollUrl, function(err, req, data) {
-      callback(err, data);
-    });
-  }, {
-    longpolling:true
-  });
+  const ws = new websocket(this.ws);
 
-  emitter.on("longpoll", function(data) {
-    console.log("longpoll emitted at %s, with data %j", Date.now());
+  this.accessories.forEach((accessory, key, map) => {
 
-    var tree = JSON.parse(data);
-    console.log(_.get(tree, 'electrical.controls.empirBusNxt-instance0-switch7'+'.state.value'))
+    console.log(accessory.name, accessory.context.path);
 
   });
 
-  // emitter.on("poll", function(data) {
-  //   console.log("Event emitted at %s, with data %j", Date.now(), data);
-  // });
-  //
-  emitter.on("error", function(err, data) {
-    console.log("Emitter errored: %s. with data %j", err, data);
 
-    // for (var accessory in this.accessories) {
-    //   accessory.reachable = false;
-    // }
+
+
+
+  something = '{  "context": "vessels.self","subscribe": [{"path": "electrical.controls.empirBusNxt-instance0-switch7.state"}] }'
+
+  ws.on('open', function open() {
+    ws.send(something);
+    console.log('someting sent');
   });
+
+  ws.on('message', function incoming(data) {
+    console.log(data);
+  });
+
 };
+
+
+// // - - - - - - - API Status polling - - - - - - -
+//
+// SignalKPlatform.prototype.InitiatePolling = function(pollUrl) {
+//   console.log('Poll URL: ' + pollUrl);
+//   var emitter = pollingtoevent(function(callback) {
+//     request.get(pollUrl, function(err, req, data) {
+//       callback(err, data);
+//     });
+//   }, {
+//     longpolling:true
+//   });
+//
+//   emitter.on("longpoll", function(data) {
+//     console.log("longpoll emitted at %s, with data %j", Date.now());
+//
+//     var tree = JSON.parse(data);
+//     console.log(_.get(tree, 'electrical.controls.empirBusNxt-instance0-switch7.state.value'))
+//
+//   });
+//
+//   // emitter.on("poll", function(data) {
+//   //   console.log("Event emitted at %s, with data %j", Date.now(), data);
+//   // });
+//   //
+//   emitter.on("error", function(err, data) {
+//     console.log("Emitter errored: %s. with data %j", err, data);
+//
+//     // for (var accessory in this.accessories) {
+//     //   accessory.reachable = false;
+//     // }
+//   });
+// };
 
 // ------------- legacy ---------------
 
-// Update accessories values
-SignalKPlatform.prototype.updateAccessoriesValues = function() {
-  this.log("Updating device values");
-
-  this.accessories.forEach((accessory, key, map) => {
-    // Update respective device value
-    switch(accessory.context.devicetype) {
-      case 'switch':
-        this.updateSwitchServices(accessory);
-        break;
-    }
-  });
-}
-
-// Update services of Switch accessory object
-SignalKPlatform.prototype.updateSwitchServices = function(accessory) {
-  // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
-  service = accessory.getService(Service.Switch)
-  characteristic = service.getCharacteristic(Characteristic.On)
-
-  this.getOnOff.bind(this, accessory.context.path + '.state',
-                      (err, newValue) => {
-                        if (error) {
-                          this.log(error)
-                        } else {
-                          service.updateCharacteristic(characteristic, newValue)
-                        }
-                      }
-  )
-};
+// // Update accessories values
+// SignalKPlatform.prototype.updateAccessoriesValues = function() {
+//   this.log("Updating device values");
+//
+//   this.accessories.forEach((accessory, key, map) => {
+//     // Update respective device value
+//     switch(accessory.context.devicetype) {
+//       case 'switch':
+//         this.updateSwitchServices(accessory);
+//         break;
+//     }
+//   });
+// }
+//
+// // Update services of Switch accessory object
+// SignalKPlatform.prototype.updateSwitchServices = function(accessory) {
+//   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
+//   service = accessory.getService(Service.Switch)
+//   characteristic = service.getCharacteristic(Characteristic.On)
+//
+//   this.getOnOff.bind(this, accessory.context.path + '.state',
+//                       (err, newValue) => {
+//                         if (error) {
+//                           this.log(error)
+//                         } else {
+//                           service.updateCharacteristic(characteristic, newValue)
+//                         }
+//                       }
+//   )
+// };
 
 //  updateSubscriptions.push(accessory, device, path);
 
