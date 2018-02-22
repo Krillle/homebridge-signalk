@@ -17,12 +17,21 @@
     {
       "platform" : "SignalK",
       "name" : "Ibelle",
-      "url": "https:/127.0.0.1:3000/signalk/v1/api/vessels/self",
+      "host": "127.0.0.1:3000",
+
+      "ignoredPaths": [
+        "electrical.controls.empirBusNxt-instance0-switch3",
+        "electrical.controls.empirBusNxt-instance0-switch4",
+        "electrical.controls.empirBusNxt-instance0-switch5",
+        "electrical.controls.empirBusNxt-instance0-switch6",
+        "electrical.controls.empirBusNxt-instance0-switch7",
+        "electrical.controls.empirBusNxt-instance0-switch8"
+      ],
 
       "displayNames": {
-        "electrical.empirBusNext.0.dimmers.0": "Deckenlicht",
-        "electrical.empirBusNext.0.dimmers.1": "Treppe",
-        "electrical.empirBusNext.0.switches.0": "Ventilator"
+        "electrical.controls.empirBusNxt-instance0-dimmer1": "Deckenlicht",
+        "electrical.controls.empirBusNxt-instance0-dimmer2": "Treppe",
+        "electrical.controls.empirBusNxt-instance0-switch1": "Ventilator"
       },
 
       "services": [
