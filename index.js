@@ -3,7 +3,6 @@ var request = require('request');
 var http = require('http');
 var _url = require('url');
 var websocket = require("ws");
-// var pollingtoevent = require("polling-to-event");
 
 var Accessory, Service, Characteristic, UUIDGen;
 
@@ -12,12 +11,12 @@ var Accessory, Service, Characteristic, UUIDGen;
 // Key path according to EmpirBus Application Specific PGN Data Model 2 (2x word + 8x bit) per instance:
 // 2x dimmer values 0 = off .. 1000 = 100%, 8x switch values 0 = off / 1 = on
 //
-// electrical.controls.empirBusNxt-instance<NXT component instance 0..49>-switch<#0..7>.state
-// electrical.controls.empirBusNxt-instance<NXT component instance 0..49>-dimmer<#0..1>.state
+// electrical.switches.empirBusNxt-instance<NXT component instance 0..49>-switch<#1..8>.state
+// electrical.switches.empirBusNxt-instance<NXT component instance 0..49>-dimmer<#1..2>.state
 
-const controlsPath = 'electrical.controls'
+const controlsPath = 'electrical.switches'
 const empirBusIdentifier = 'empirBusNxt'
-const putPath = '/plugins/signalk-empirbus-nxt/controls/'
+const putPath = '/plugins/signalk-empirbus-nxt/switches/'
 const urlPath = 'signalk/v1/api/vessels/self/'
 const wsPath = 'signalk/v1/stream?subscribe=none' // none will stream only the heartbeat, until the client issues subscribe messages in the WebSocket stream
 
@@ -52,8 +51,6 @@ const tanksPath = 'tanks'
 const batteriesPath = 'electrical.batteries'
 const inverterChargerPath = 'electrical.inverterCharger'
 
-var updateSubscriptions = []; // Collects the devices to update in polling squence // FIXME
-
 
 module.exports = function(homebridge) {
   // console.log("homebridge API version: " + homebridge.version);
@@ -81,14 +78,10 @@ function SignalKPlatform(log, config, api) {
   this.config = config;
   this.accessories = new Map();
 
+  this.updateSubscriptions = new Map (); // Devices to update on WebSocket
+
   this.url = 'http://' + config.host + '/' + urlPath;
   this.ws = 'ws://' + config.host + '/' + wsPath;
-
-  // this.url = ( config.url.charAt(config.url.length-1) == '/' ) ?
-  //   config.url + urlPath : config.url + '/' + urlPath  // Append "/" to URL if missing
-  //
-  // this.ws = ( config.url.charAt(config.url.length-1) == '/' ) ?
-  //   config.url + wsPath : config.url + '/' + wsPath  // Append "/" to URL if missing
 
 
   // this.requestServer = http.createServer(function(request, response) {
@@ -129,7 +122,7 @@ function SignalKPlatform(log, config, api) {
         platform.log("Checking for unreachable devices");
         platform.accessories.forEach((accessory, key, map) => {
           platform.checkKey(accessory.context.path, (error, result) => {
-            if (error && error.message == 'device not present: 404') {
+            if (error && error.message == 'device not present: 404' || !this.noignoredPath(accessory.context.path)) {
               platform.log(`${accessory.displayName} not present`);
               platform.removeAccessory(accessory);
             }
@@ -167,6 +160,7 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
     }
   })
 
+  // FIXME: Ignored paths are added anyway
   // Add Device Services
   switch(accessory.context.devicetype) {
     case 'switch':
@@ -395,7 +389,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
 
   accessory.getService(Service.Lightbulb)
   .getCharacteristic(Characteristic.Brightness)
-  .on('get', this.getRatio.bind(this, accessory.context.path + '.state'))
+  .on('get', this.getRatio.bind(this, accessory.context.path + '.dimmingLevel'))
   .on('set', function(value, callback) {
     platform.log(`Set dimmer ${accessory.displayName}.Brightness to ${value}%`)
     platform.SetRatio(accessory.context.identifier, value, ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
@@ -418,7 +412,10 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
     callback();
   });
 
-//  updateSubscriptions.push(accessory, device, path);
+  subscription = new Object ();
+  subscription.characteristic = accessory.getService(Service.Switch).getCharacteristic(Characteristic.On)
+  subscription.conversion = (body) => body == true
+  this.updateSubscriptions.set(accessory.context.path + '.state', subscription);
 }
 
 // Add services for Temperature Sensor to existing accessory object
@@ -427,6 +424,11 @@ SignalKPlatform.prototype.addTemperatureServices = function(accessory) {
   accessory.getService(Service.TemperatureSensor)
   .getCharacteristic(Characteristic.CurrentTemperature)
   .on('get', this.getTemperature.bind(this, accessory.context.path));
+
+  subscription = new Object ();
+  subscription.characteristic = accessory.getService(Service.TemperatureSensor).getCharacteristic(Characteristic.CurrentTemperature)
+  subscription.conversion = (body) =>  Number(body) - 273.15
+  this.updateSubscriptions.set(accessory.context.path, subscription);
 }
 
 // Add services for Humidity Sensor to existing accessory object
@@ -511,8 +513,8 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         var fallbackName = controls[device].name.value || controls[device].meta.displayName.value ;
         var displayName = this.getName(path, fallbackName);
         var devicetype = controls[device].type.value;
-        var manufacturer = controls[device].manufacturer.name.value || "EmpirBus";
-        var model = controls[device].manufacturer.model.value || "NXT DCM";
+        var manufacturer = controls[device].meta.manufacturer.name.value || "EmpirBus";
+        var model = controls[device].meta.manufacturer.model.value || "NXT DCM";
 
         this.addAccessory(displayName, device, path, manufacturer, model, controls[device].name.value, controlsPath, devicetype);
         // updateSubscriptions.push(displayName, device, path);
@@ -624,7 +626,7 @@ SignalKPlatform.prototype.noignoredPath = function(path) {
 // Reads value for path from Signal K API
 SignalKPlatform.prototype.getValue = function(path, cb, conversion) {
   var url = this.url + path.replace(/\./g, '/')
-//  this.log(`GET ${url}`)
+// this.log(`GET ${url}`)
   request(url,
           (error, response, body) => {
             if ( error ) {
@@ -637,6 +639,8 @@ SignalKPlatform.prototype.getValue = function(path, cb, conversion) {
 //              this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error(`invalid response ${response.statusCode}`), null)
             } else {
+// this.log(`GET ${url}`)
+// this.log(body, '>', conversion(body) );
               cb(null, conversion(body))
             }
           })
@@ -657,7 +661,7 @@ SignalKPlatform.prototype.getRatio = function(path, callback) {
 // Returns the state of path as boolean
 SignalKPlatform.prototype.getOnOff = function(path, callback) {
   this.getValue(path + '.value', callback,
-                (body) => (body == '"on"') || (Number(body) > 0))
+                (body) => (body == 'true') )
 }
 
 // Returns temperature in °C
@@ -718,36 +722,52 @@ SignalKPlatform.prototype.SetRatio = function(device, value, callback) {
 
 // Set the state of path as boolean
 SignalKPlatform.prototype.setOnOff = function(device, value, callback) {
-  value = (value === true || value === "true") ? 'on' : 'off';
+  value = (value === true || value === "true") ? true : false;
   this.setValue(device, value, callback);
 }
 
 // - - - - - - - WebSocket Status Update- - - - - - - - - - - - - - - - - -
 
 SignalKPlatform.prototype.InitiateWebSocket = function() {
-  console.log('WebSocket URL: ' + this.ws);
-
+// console.log('WebSocket URL: ' + this.ws);
+  platform = this;
   const ws = new websocket(this.ws);
 
-  this.accessories.forEach((accessory, key, map) => {
-
-    console.log(accessory.name, accessory.context.path);
-
+  // Build WebSocket subscription string
+  var wsPaths = [];
+  this.updateSubscriptions.forEach((subscription, key, map) => {
+// console.log(key, '>', subscription.conversion);
+    wsPaths.push({"path": key})
   });
+  var subscriptionMessage = `{"context": "vessels.self","subscribe":${JSON.stringify(wsPaths)}}`
 
-
-
-
-
-  something = '{  "context": "vessels.self","subscribe": [{"path": "electrical.controls.empirBusNxt-instance0-switch7.state"}] }'
+  console.log(subscriptionMessage);
 
   ws.on('open', function open() {
-    ws.send(something);
-    console.log('someting sent');
+    ws.send(subscriptionMessage);
+    console.log('subscriptionMessage sent');
   });
 
   ws.on('message', function incoming(data) {
-    console.log(data);
+    // console.log('>',data);
+    message = JSON.parse(data)
+
+    if ( _.hasIn(message, 'updates') ) {
+      updateOne = _.first(message.updates)
+      valueOne = _.first(updateOne.values)
+      valuePath = valueOne.path
+      valueValue = valueOne.value
+      console.log(valuePath, '>', valueValue);
+
+      target = platform.updateSubscriptions.get(valuePath)
+      target.characteristic.updateValue(target.conversion(valueValue));
+      console.log(valueOne.path, '|', valueValue, '>', target.conversion(valueValue));
+      console.log('Check:',target.conversion(273.15))
+
+    } else {
+      console.log('Revieced Welcome');
+    }
+
   });
 
 };
