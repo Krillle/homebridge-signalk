@@ -81,8 +81,10 @@ function SignalKPlatform(log, config, api) {
   this.updateSubscriptions = new Map (); // Devices to update on WebSocket
 
   this.url = 'http://' + config.host + '/' + urlPath;
-  this.ws = 'ws://' + config.host + '/' + wsPath;
+  this.wsl = 'ws://' + config.host + '/' + wsPath;
 
+  this.ws = new websocket(this.wsl);
+  this.wsInitiated = false;
 
   // this.requestServer = http.createServer(function(request, response) {
   //   if (request.url === "/add") {
@@ -129,12 +131,13 @@ function SignalKPlatform(log, config, api) {
           })
         });
 
+        // Start accessories value updating
+        platform.InitiateWebSocket()
+        this.wsInitiated = true;
+
         // Addd new accessories in Signal K
         platform.log("Looking for new accessories");
         platform.autodetectNewAccessories()
-
-        // Start accessories value updating
-        platform.InitiateWebSocket()
 
       }.bind(this));
   }
@@ -395,7 +398,6 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
     platform.SetRatio(accessory.context.identifier, value, ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
     callback();
   });
-
 }
 
 // Add services for Switch to existing accessory object
@@ -416,6 +418,9 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
   subscription.characteristic = accessory.getService(Service.Switch).getCharacteristic(Characteristic.On)
   subscription.conversion = (body) => body == true
   this.updateSubscriptions.set(accessory.context.path + '.state', subscription);
+  if (this.wsInitiated) {
+    this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${accessory.context.path}.state"}]}`)
+  };
 }
 
 // Add services for Temperature Sensor to existing accessory object
@@ -474,6 +479,7 @@ SignalKPlatform.prototype.removeAccessory = function(accessory) {
   this.log('Remove accessory', accessory.displayName);
   this.api.unregisterPlatformAccessories("homebridge-signalk", "SignalK", [accessory]);
   this.accessories.delete(accessory.context.path);
+  this.updateSubscriptions.delete(accessory.context.path);
 }
 
 // - - - - - - - - - - - - - - - Signal K specific - - - - - - - - - - - - - -
@@ -729,26 +735,24 @@ SignalKPlatform.prototype.setOnOff = function(device, value, callback) {
 // - - - - - - - WebSocket Status Update- - - - - - - - - - - - - - - - - -
 
 SignalKPlatform.prototype.InitiateWebSocket = function() {
-// console.log('WebSocket URL: ' + this.ws);
   platform = this;
-  const ws = new websocket(this.ws);
 
   // Build WebSocket subscription string
-  var wsPaths = [];
+  var subscriptionPaths = [];
   this.updateSubscriptions.forEach((subscription, key, map) => {
 // console.log(key, '>', subscription.conversion);
-    wsPaths.push({"path": key})
+    subscriptionPaths.push({"path": key})
   });
-  var subscriptionMessage = `{"context": "vessels.self","subscribe":${JSON.stringify(wsPaths)}}`
 
+  var subscriptionMessage = `{"context": "vessels.self","subscribe":${JSON.stringify(subscriptionPaths)}}`
   console.log(subscriptionMessage);
 
-  ws.on('open', function open() {
-    ws.send(subscriptionMessage);
+  this.ws.on('open', function open() {
+    platform.ws.send(subscriptionMessage);
     console.log('subscriptionMessage sent');
   });
 
-  ws.on('message', function incoming(data) {
+  this.ws.on('message', function incoming(data) {
     // console.log('>',data);
     message = JSON.parse(data)
 
@@ -772,6 +776,12 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
 
 };
 
+SignalKPlatform.prototype.subscribeToPaths = function(subscriptionPaths) {  // Array of paths to subscribe
+  platform = this;
+
+
+
+}
 
 // // - - - - - - - API Status polling - - - - - - -
 //
