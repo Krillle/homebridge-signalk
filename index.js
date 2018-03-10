@@ -164,6 +164,7 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
   })
 
   // FIXME: Ignored paths are added anyway
+  // FIXME: Results in chrash ws updates when ingoredor unreachable device is deleted afterwards
   // Add Device Services
   switch(accessory.context.devicetype) {
     case 'switch':
@@ -318,6 +319,8 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
   newAccessory.context.model = model
   newAccessory.context.serialnumber = serialnumber
 
+  newAccessory.context.subscriptions = []
+
   // Add Device Information
   newAccessory.getService(Service.AccessoryInformation)
     .setCharacteristic(Characteristic.Manufacturer, manufacturer)
@@ -381,23 +384,45 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   });
 
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
+  var dataPath = accessory.context.path + '.state'
   accessory.getService(Service.Lightbulb)
   .getCharacteristic(Characteristic.On)
-  .on('get', this.getOnOff.bind(this, accessory.context.path + '.state'))
+  .on('get', this.getOnOff.bind(this, dataPath))
   .on('set', function(value, callback) {
     platform.log(`Set dimmer ${accessory.displayName}.state to ${value}`)
     platform.setOnOff(accessory.context.identifier, value, ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
     callback();
   })
 
+  subscription = new Object ();
+  subscription.characteristic = accessory.getService(Service.Lightbulb).getCharacteristic(Characteristic.On)
+  subscription.conversion = (body) => body == true
+  this.updateSubscriptions.set(dataPath, subscription);
+  if (this.wsInitiated) {
+    this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
+  };
+  accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
+  accessory.context.subscriptions = _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
+
+  dataPath = accessory.context.path + '.dimmingLevel'
   accessory.getService(Service.Lightbulb)
   .getCharacteristic(Characteristic.Brightness)
-  .on('get', this.getRatio.bind(this, accessory.context.path + '.dimmingLevel'))
+  .on('get', this.getRatio.bind(this, dataPath))
   .on('set', function(value, callback) {
     platform.log(`Set dimmer ${accessory.displayName}.Brightness to ${value}%`)
     platform.SetRatio(accessory.context.identifier, value, ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
     callback();
   });
+
+  subscription = new Object ();
+  subscription.characteristic = accessory.getService(Service.Lightbulb).getCharacteristic(Characteristic.Brightness)
+  subscription.conversion = (body) =>  Number(body) * 100
+  this.updateSubscriptions.set(dataPath, subscription);
+  if (this.wsInitiated) {
+    this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
+  };
+  accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
+  accessory.context.subscriptions = _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
 }
 
 // Add services for Switch to existing accessory object
@@ -405,9 +430,10 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
   var platform = this;
 
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
+  const dataPath = accessory.context.path + '.state'
   accessory.getService(Service.Switch)
   .getCharacteristic(Characteristic.On)
-  .on('get', this.getOnOff.bind(this, accessory.context.path + '.state'))
+  .on('get', this.getOnOff.bind(this, dataPath))
   .on('set', function(value, callback) {
     platform.log(`Set switch ${accessory.displayName}.state to ${value}`)
     platform.setOnOff(accessory.context.identifier, value, ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
@@ -417,10 +443,15 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.Switch).getCharacteristic(Characteristic.On)
   subscription.conversion = (body) => body == true
-  this.updateSubscriptions.set(accessory.context.path + '.state', subscription);
+  this.updateSubscriptions.set(dataPath, subscription);
   if (this.wsInitiated) {
-    this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${accessory.context.path}.state"}]}`)
+    this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
+//    console.log(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`);
   };
+  accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
+  accessory.context.subscriptions = _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
+//  console.log('Added', dataPath, 'length', accessory.context.subscriptions.length);
+//  console.log(accessory.context.subscriptions);
 }
 
 // Add services for Temperature Sensor to existing accessory object
@@ -434,6 +465,11 @@ SignalKPlatform.prototype.addTemperatureServices = function(accessory) {
   subscription.characteristic = accessory.getService(Service.TemperatureSensor).getCharacteristic(Characteristic.CurrentTemperature)
   subscription.conversion = (body) =>  Number(body) - 273.15
   this.updateSubscriptions.set(accessory.context.path, subscription);
+  if (this.wsInitiated) {
+    this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${accessory.context.path}"}]}`)
+  };
+  accessory.context.subscriptions.push(accessory.context.path)  // Link from accessory to subscription
+  _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
 }
 
 // Add services for Humidity Sensor to existing accessory object
@@ -480,6 +516,10 @@ SignalKPlatform.prototype.removeAccessory = function(accessory) {
   this.api.unregisterPlatformAccessories("homebridge-signalk", "SignalK", [accessory]);
   this.accessories.delete(accessory.context.path);
   this.updateSubscriptions.delete(accessory.context.path);
+  accessory.context.subscriptions.forEach(subscription => {
+    this.ws.send(`{"context": "vessels.self","unsubscribe":[{"path":"${subscription}"}]}`)
+    console.log('removed',`{"context": "vessels.self","unsubscribe":[{"path":"${subscription}"}]}`);
+  })
 }
 
 // - - - - - - - - - - - - - - - Signal K specific - - - - - - - - - - - - - -
@@ -740,123 +780,34 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
   // Build WebSocket subscription string
   var subscriptionPaths = [];
   this.updateSubscriptions.forEach((subscription, key, map) => {
-// console.log(key, '>', subscription.conversion);
     subscriptionPaths.push({"path": key})
   });
 
   var subscriptionMessage = `{"context": "vessels.self","subscribe":${JSON.stringify(subscriptionPaths)}}`
-  console.log(subscriptionMessage);
+  // console.log(subscriptionMessage);
 
   this.ws.on('open', function open() {
     platform.ws.send(subscriptionMessage);
-    console.log('subscriptionMessage sent');
+    platform.log('Subscription message sent');
   });
 
   this.ws.on('message', function incoming(data) {
-    // console.log('>',data);
     message = JSON.parse(data)
 
     if ( _.hasIn(message, 'updates') ) {
-      updateOne = _.first(message.updates)
-      valueOne = _.first(updateOne.values)
-      valuePath = valueOne.path
-      valueValue = valueOne.value
-      console.log(valuePath, '>', valueValue);
+      latestUpdate = _.last(message.updates)  // We want to update to last status only
+      latestValue = _.last(latestUpdate.values)
+      valuePath = latestValue.path
+      valueValue = latestValue.value
 
       target = platform.updateSubscriptions.get(valuePath)
       target.characteristic.updateValue(target.conversion(valueValue));
-      console.log(valueOne.path, '|', valueValue, '>', target.conversion(valueValue));
-      console.log('Check:',target.conversion(273.15))
 
+      platform.log('Updating value:', valuePath, '|', valueValue, '>', target.conversion(valueValue));
     } else {
-      console.log('Revieced Welcome');
+      platform.log('Welcome message revieced');
     }
 
   });
 
 };
-
-SignalKPlatform.prototype.subscribeToPaths = function(subscriptionPaths) {  // Array of paths to subscribe
-  platform = this;
-
-
-
-}
-
-// // - - - - - - - API Status polling - - - - - - -
-//
-// SignalKPlatform.prototype.InitiatePolling = function(pollUrl) {
-//   console.log('Poll URL: ' + pollUrl);
-//   var emitter = pollingtoevent(function(callback) {
-//     request.get(pollUrl, function(err, req, data) {
-//       callback(err, data);
-//     });
-//   }, {
-//     longpolling:true
-//   });
-//
-//   emitter.on("longpoll", function(data) {
-//     console.log("longpoll emitted at %s, with data %j", Date.now());
-//
-//     var tree = JSON.parse(data);
-//     console.log(_.get(tree, 'electrical.controls.empirBusNxt-instance0-switch7.state.value'))
-//
-//   });
-//
-//   // emitter.on("poll", function(data) {
-//   //   console.log("Event emitted at %s, with data %j", Date.now(), data);
-//   // });
-//   //
-//   emitter.on("error", function(err, data) {
-//     console.log("Emitter errored: %s. with data %j", err, data);
-//
-//     // for (var accessory in this.accessories) {
-//     //   accessory.reachable = false;
-//     // }
-//   });
-// };
-
-// ------------- legacy ---------------
-
-// // Update accessories values
-// SignalKPlatform.prototype.updateAccessoriesValues = function() {
-//   this.log("Updating device values");
-//
-//   this.accessories.forEach((accessory, key, map) => {
-//     // Update respective device value
-//     switch(accessory.context.devicetype) {
-//       case 'switch':
-//         this.updateSwitchServices(accessory);
-//         break;
-//     }
-//   });
-// }
-//
-// // Update services of Switch accessory object
-// SignalKPlatform.prototype.updateSwitchServices = function(accessory) {
-//   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
-//   service = accessory.getService(Service.Switch)
-//   characteristic = service.getCharacteristic(Characteristic.On)
-//
-//   this.getOnOff.bind(this, accessory.context.path + '.state',
-//                       (err, newValue) => {
-//                         if (error) {
-//                           this.log(error)
-//                         } else {
-//                           service.updateCharacteristic(characteristic, newValue)
-//                         }
-//                       }
-//   )
-// };
-
-//  updateSubscriptions.push(accessory, device, path);
-
-
-
-
-    //
-    // platform.checkKey(accessory.context.path, (error, result) => {
-    //   if (error && error.message == 'device not present: 404') {
-    //     platform.log(`${accessory.displayName} not present`);
-    //     platform.removeAccessory(accessory);
-    //   }
