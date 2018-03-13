@@ -3,6 +3,7 @@ var request = require('request');
 var http = require('http');
 var _url = require('url');
 var websocket = require("ws");
+var uuidv4 = require('uuid/v4');
 
 var Accessory, Service, Characteristic, UUIDGen;
 
@@ -304,7 +305,8 @@ SignalKPlatform.prototype.configurationRequestHandler = function(context, reques
 // Add accessory
 SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, devicetype) {
   var platform = this;
-  var uuid = UUIDGen.generate(accessoryName);
+  var uuid = UUIDGen.generate(path);
+  // var uuid = uuidv4();
 
   this.log(`Add Accessory ${accessoryName}: ${path}, ${devicetype}`);
 
@@ -346,18 +348,27 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
       this.addHumidityServices(newAccessory);
       break;
     case 'tank':
-      newAccessory.addService(Service.LeakSensor, accessoryName)
+      // newAccessory.addService(Service.LeakSensor, accessoryName)
+      newAccessory.addService(Service.HumiditySensor, accessoryName) // Workaround to shoe tank level
+      newAccessory.addService(Service.BatteryService, accessoryName) // Used for low tank level warning
       this.addTankServices(newAccessory);
       break;
     case 'battery' || 'charger':
+      newAccessory.addService(Service.HumiditySensor, accessoryName) // Used as main accessory
       newAccessory.addService(Service.BatteryService, accessoryName)
       this.addBatteryServices(newAccessory);
       break;
+    case 'leak':
+        newAccessory.addService(Service.LeakSensor, accessoryName)
+        this.addLeakServices(newAccessory);
+        break;
   }
 
   this.accessories.set(path, newAccessory);
+console.log(newAccessory);
   this.api.registerPlatformAccessories("homebridge-signalk", "SignalK", [newAccessory]);
 }
+
 
 // Add services for Dimmer to existing accessory object
 SignalKPlatform.prototype.addDimmerServices = function(accessory) {
@@ -425,6 +436,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   accessory.context.subscriptions = _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
 }
 
+
 // Add services for Switch to existing accessory object
 SignalKPlatform.prototype.addSwitchServices = function(accessory) {
   var platform = this;
@@ -454,6 +466,7 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
 //  console.log(accessory.context.subscriptions);
 }
 
+
 // Add services for Temperature Sensor to existing accessory object
 SignalKPlatform.prototype.addTemperatureServices = function(accessory) {
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
@@ -472,6 +485,7 @@ SignalKPlatform.prototype.addTemperatureServices = function(accessory) {
   _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
 }
 
+
 // Add services for Humidity Sensor to existing accessory object
 SignalKPlatform.prototype.addHumidityServices = function(accessory) {
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
@@ -480,13 +494,68 @@ SignalKPlatform.prototype.addHumidityServices = function(accessory) {
   .on('get', this.getRatio.bind(this, accessory.context.path));
 }
 
+
+// Add services for Tanks (mapped as Humidity Sensor) to existing accessory object
 SignalKPlatform.prototype.addTankServices = function(accessory) {
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
-  accessory.getService(Service.LeakSensor)
-  .getCharacteristic(Characteristic.WaterLevel)
-  .on('get', this.getRatio.bind(this, accessory.context.path));
+  const dataPath = accessory.context.path + '.currentLevel'
+  // accessory.getService(Service.LeakSensor)
+  // .getCharacteristic(Characteristic.WaterLevel)
+  accessory.getService(Service.HumiditySensor)              // Workaround, as Home app does not show tank levels
+  .getCharacteristic(Characteristic.CurrentRelativeHumidity)
+  .on('get', this.getRatio.bind(this, dataPath));
+
+  subscription = new Object ();
+  subscription.characteristic = accessory.getService(Service.HumiditySensor).getCharacteristic(Characteristic.CurrentRelativeHumidity)
+  // subscription.characteristic = accessory.getService(Service.LeakSensor).getCharacteristic(Characteristic.WaterLevel)
+  subscription.conversion = (body) =>  Number(body) * 100
+  this.updateSubscriptions.set(dataPath, subscription);
+  if (this.wsInitiated) {
+    this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
+//    console.log(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`);
+  };
+  accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
+  accessory.context.subscriptions = _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
+//  console.log('Added', dataPath, 'length', accessory.context.subscriptions.length);
+//  console.log(accessory.context.subscriptions);
+
+  accessory.getService(Service.BatteryService)
+  .getCharacteristic(Characteristic.StatusLowBattery)
+  .on('get', this.getStatusLowTank.bind(this, dataPath));
+
+  subscription = new Object ();
+  subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.StatusLowBattery)
+  subscription.conversion = (body) =>  Number(body) < 0.50
+  this.updateSubscriptions.set(dataPath, subscription);
+  if (this.wsInitiated) {
+    this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
+//    console.log(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`);
+  };
+  accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
+  accessory.context.subscriptions = _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
+//  console.log('Added', dataPath, 'length', accessory.context.subscriptions.length);
+//  console.log(accessory.context.subscriptions);
+
+  accessory.getService(Service.BatteryService)
+  .getCharacteristic(Characteristic.BatteryLevel)
+  .on('get', this.getRatio.bind(this, dataPath));
+
+//   subscription = new Object ();
+//   subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.BatteryLevel)
+//   subscription.conversion = (body) =>  Number(body) * 100
+//   this.updateSubscriptions.set(dataPath, subscription);
+//   if (this.wsInitiated) {
+//     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
+// //    console.log(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`);
+//   };
+//   accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
+//   accessory.context.subscriptions = _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
+// //  console.log('Added', dataPath, 'length', accessory.context.subscriptions.length);
+// //  console.log(accessory.context.subscriptions);
 }
 
+
+// Add services for Batteries (with Humidity Sensor as main accessory) to existing accessory object
 SignalKPlatform.prototype.addBatteryServices = function(accessory) {
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   accessory.getService(Service.BatteryService)
@@ -500,6 +569,29 @@ SignalKPlatform.prototype.addBatteryServices = function(accessory) {
   accessory.getService(Service.BatteryService)
   .getCharacteristic(Characteristic.StatusLowBattery)
   .on('get', this.getStatusLowBattery.bind(this, accessory.context.path + ".voltage"));
+}
+
+
+// Add services for Leak Sensor to existing accessory object
+SignalKPlatform.prototype.addLeakServices = function(accessory) {
+  // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
+  const dataPath = accessory.context.path + '.currentLevel'
+  accessory.getService(Service.LeakSensor)
+  .getCharacteristic(Characteristic.LeakDetected)
+  .on('get', this.getOnOff.bind(this, dataPath))
+
+  subscription = new Object ();
+  subscription.characteristic = accessory.getService(Service.LeakSensor).getCharacteristic(Characteristic.LeakDetected)
+  subscription.conversion = (body) => body == true
+  this.updateSubscriptions.set(dataPath, subscription);
+  if (this.wsInitiated) {
+    this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
+//    console.log(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`);
+  };
+  accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
+  accessory.context.subscriptions = _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
+//  console.log('Added', dataPath, 'length', accessory.context.subscriptions.length);
+//  console.log(accessory.context.subscriptions);
 }
 
 
@@ -600,12 +692,12 @@ SignalKPlatform.prototype.processFullTree = function(body) {
               && !this.accessories.has(path) ) {
 
           var displayName = _.get(instance, "meta.displayName") || this.getName(path, tankType);
-          var deviceType = 'tank';
+          var deviceType = 'tank'; //
           var manufacturer = "NMEA"; // chargers[instance].manufacturer.name.value || "NMEA";
           var model = tankType; // chargers[instance].manufacturer.model.value || "Charger";
           var deviceKey = `${tankType}.${instance}`
 
-          this.addAccessory(displayName, deviceKey, path, manufacturer, model, deviceKey, controlsPath, deviceType);
+          this.addAccessory(displayName, deviceKey, path, manufacturer, model, deviceKey, tanksPath, deviceType);
           // updateSubscriptions.push(displayName, device, path);
         }
       })
@@ -627,7 +719,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         var manufacturer = "NMEA"; // batteries[instance].manufacturer.name.value || "NMEA";
         var model = "Battery"; // batteries[instance].manufacturer.model.value || "Battery";
 
-        this.addAccessory(displayName, instance, path, manufacturer, model, displayName, controlsPath, devicetype);
+        this.addAccessory(displayName, instance, path, manufacturer, model, displayName, batteriesPath, devicetype);
         // updateSubscriptions.push(displayName, device, path);
       }
     });
@@ -647,7 +739,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         var manufacturer = "NMEA"; // chargers[instance].manufacturer.name.value || "NMEA";
         var model = "Charger"; // chargers[instance].manufacturer.model.value || "Charger";
 
-        this.addAccessory(displayName, instance, path, manufacturer, model, displayName, controlsPath, devicetype);
+        this.addAccessory(displayName, instance, path, manufacturer, model, displayName, inverterChargerPath, devicetype);
         // updateSubscriptions.push(displayName, device, path);
       }
     });
@@ -734,16 +826,22 @@ SignalKPlatform.prototype.getChargingState = function(path, callback)  {
 SignalKPlatform.prototype.getStatusLowBattery = function(path, callback) {
   this.getValue(path + '.value', callback,
                 (body) =>  {
-                  return Number(body) < 11.5;  // FIXME: Low battery voltage 23V
+                  return Number(body) < 23;  // FIXME: Low battery voltage for 24V only
                 })
 }
 
+SignalKPlatform.prototype.getStatusLowTank = function(path, callback) {
+  this.getValue(path + '.value', callback,
+                (body) =>  {
+                  return Number(body) < 50;  // FIXME: Low battery voltage 23V
+                })
+}
 
 // Writes value for path to Signal K API
 SignalKPlatform.prototype.setValue = function(device, value, cb) {
   var url = _url.parse(this.url, true, true)
   url = `${url.protocol}//${url.host}${putPath}${device}/${value}`
-  this.log(`PUT ${url}`)
+// this.log(`PUT ${url}`)
   request({url: url,
            method: 'PUT'
           },
