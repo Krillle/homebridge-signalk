@@ -349,7 +349,7 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
   newAccessory.context.categoryPath = categoryPath
   newAccessory.context.devicetype = devicetype
   newAccessory.context.manufacturer = manufacturer
-  newAccessory.context.model = model
+  newAccessory.context.model = model  // Tank Warning relies on model as tank type
   newAccessory.context.serialnumber = serialnumber
 
   newAccessory.context.subscriptions = []
@@ -445,10 +445,8 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   this.updateSubscriptions.set(dataPath, subscriptionList);
   if (this.wsInitiated) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
+    accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   };
-
-  accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
-  accessory.context.subscriptions = _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
 
 
   dataPath = accessory.context.path + '.dimmingLevel'
@@ -470,9 +468,8 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   this.updateSubscriptions.set(dataPath, subscriptionList);
   if (this.wsInitiated) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
+    accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   };
-  accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
-  accessory.context.subscriptions = _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
 }
 
 
@@ -500,12 +497,8 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
   this.updateSubscriptions.set(dataPath, subscriptionList);
   if (this.wsInitiated) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
-//    console.log(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`);
+    accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   };
-  accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
-  accessory.context.subscriptions = _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
-//  console.log('Added', dataPath, 'length', accessory.context.subscriptions.length);
-//  console.log(accessory.context.subscriptions);
 }
 
 
@@ -525,9 +518,8 @@ SignalKPlatform.prototype.addTemperatureServices = function(accessory) {
   this.updateSubscriptions.set(accessory.context.path, subscriptionList);
   if (this.wsInitiated) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${accessory.context.path}"}]}`)
+    accessory.context.subscriptions.push(accessory.context.path)  // Link from accessory to subscription
   };
-  accessory.context.subscriptions.push(accessory.context.path)  // Link from accessory to subscription
-  _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
 }
 
 
@@ -547,9 +539,8 @@ SignalKPlatform.prototype.addHumidityServices = function(accessory) {
   this.updateSubscriptions.set(accessory.context.path, subscriptionList);
   if (this.wsInitiated) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${accessory.context.path}"}]}`)
+    accessory.context.subscriptions.push(accessory.context.path)  // Link from accessory to subscription
   };
-  accessory.context.subscriptions.push(accessory.context.path)  // Link from accessory to subscription
-  _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
 }
 
 
@@ -588,12 +579,8 @@ SignalKPlatform.prototype.addTankServices = function(accessory) {
   this.updateSubscriptions.set(dataPath, subscriptionList);
   if (this.wsInitiated) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
-//    console.log(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`);
+    accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   };
-  accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
-  accessory.context.subscriptions = _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
-//  console.log('Added', dataPath, 'length', accessory.context.subscriptions.length);
-//  console.log(accessory.context.subscriptions);
 }
 
 
@@ -623,12 +610,8 @@ SignalKPlatform.prototype.addBatteryServices = function(accessory) {
   this.updateSubscriptions.set(dataPath, subscriptionList);
   if (this.wsInitiated) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
-//    console.log(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`);
+    accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   };
-  accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
-  accessory.context.subscriptions = _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
-//  console.log('Added', dataPath, 'length', accessory.context.subscriptions.length);
-//  console.log(accessory.context.subscriptions);
 
 
   // var dataPath = accessory.context.path + '.chargingMode'
@@ -645,12 +628,8 @@ SignalKPlatform.prototype.addBatteryServices = function(accessory) {
   this.updateSubscriptions.set(dataPath, subscriptionList);
   if (this.wsInitiated) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
-//    console.log(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`);
+    accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   };
-  accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
-  accessory.context.subscriptions = _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
-//  console.log('Added', dataPath, 'length', accessory.context.subscriptions.length);
-//  console.log(accessory.context.subscriptions);
 
 
   var dataPath = accessory.context.path + '.voltage'
@@ -667,12 +646,8 @@ SignalKPlatform.prototype.addBatteryServices = function(accessory) {
   this.updateSubscriptions.set(dataPath, subscriptionList);
   if (this.wsInitiated) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
-//    console.log(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`);
+    accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   };
-  accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
-  accessory.context.subscriptions = _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
-//  console.log('Added', dataPath, 'length', accessory.context.subscriptions.length);
-//  console.log(accessory.context.subscriptions);
 }
 
 
@@ -693,12 +668,8 @@ SignalKPlatform.prototype.addLeakServices = function(accessory) {
   this.updateSubscriptions.set(dataPath, subscriptionList);
   if (this.wsInitiated) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
-//    console.log(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`);
+    accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   };
-  accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
-  accessory.context.subscriptions = _.uniq(accessory.context.subscriptions)  // FIXME: Very dirty but works
-//  console.log('Added', dataPath, 'length', accessory.context.subscriptions.length);
-//  console.log(accessory.context.subscriptions);
 }
 
 
