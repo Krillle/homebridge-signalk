@@ -7,7 +7,7 @@ var uuidv4 = require('uuid/v4');
 
 var Accessory, Service, Characteristic, UUIDGen;
 
-// EmpirBus: yyx
+// EmpirBus:
 //
 // Key path according to EmpirBus Application Specific PGN Data Model 2 (2x word + 8x bit) per instance:
 // 2x dimmer values 0 = off .. 1000 = 100%, 8x switch values 0 = off / 1 = on
@@ -47,6 +47,14 @@ const environments = [
 
 // Tanks
 const tanksPath = 'tanks'
+const defaultLowFreshWaterLevel = 25.0
+const defaultHighWasteWaterLevel = 75.0
+const defaultHighBlackWaterLevel = 75.0
+const defaultLowFuelLevel = 50.0
+const defaultLowLubricationLevel = 50.0
+const defaultLowLiveWellLevel = 50.0
+const defaultLowGasLevel = 50.0
+const defaultLowBallastLevel = 50.0
 
 // Batteries and chargers
 const batteriesPath = 'electrical.batteries'
@@ -89,6 +97,26 @@ function SignalKPlatform(log, config, api) {
   this.wsInitiated = false;
 
   this.lowBatteryVoltage = Number(config.lowBatteryVoltage) || defaultLowBatteryVoltage;
+
+  this.lowFreshWaterLevel = Number(config.lowFreshWaterLevel) || defaultLowFreshWaterLevel;
+  this.highWasteWaterLevel = Number(config.highWasteWaterLevel) || defaultHighWasteWaterLevel;
+  this.highBlackWaterLevel = Number(config.highBlackWaterLevel) || defaultHighBlackWaterLevel;
+  this.lowFuelLevel = Number(config.lowFuelLevel) || defaultLowFuelLevel;
+  this.lowLubricationLevel = Number(config.lowLubricationLevel) || defaultLowLubricationLevel;
+  this.lowLiveWellLevel = Number(config.lowLiveWellLevel) || defaultLowLiveWellLevel;
+  this.lowGasLevel = Number(config.lowGasLevel) || defaultLowGasLevel;
+  this.lowBallastLevel = Number(config.lowBallastLevel) || defaultLowBallastLevel;
+
+  this.tankWarnCondition = {
+    freshWater : (level) =>  Number(level) * 100 <= this.lowFreshWaterLevel,
+    wasteWater : (level) =>  Number(level) * 100 >= this.highWasteWaterLevel,
+    blackWater : (level) =>  Number(level) * 100 >= this.highBlackWaterLevel,
+    fuel : (level) =>  Number(level) * 100 <= this.lowFuelLevel,
+    lubrication : (level) =>  Number(level) * 100 <= this.lowLubricationLevel,
+    liveWell : (level) =>  Number(level) * 100 <= this.lowLiveWellLevel,
+    gas : (level) =>  Number(level) * 100 <= this.lowGasLevel,
+    ballast : (level) =>  Number(level) * 100 <= this.lowBallastLevel
+  }
 
   // this.requestServer = http.createServer(function(request, response) {
   //   if (request.url === "/add") {
@@ -545,7 +573,7 @@ SignalKPlatform.prototype.addTankServices = function(accessory) {
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.StatusLowBattery)
-  subscription.conversion = (body) =>  Number(body) < 0.50
+  subscription.conversion = this.tankWarnCondition[accessory.context.model]
   subscriptionList.push(subscription)
 
   accessory.getService(Service.BatteryService)
@@ -980,6 +1008,7 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
       targetList = platform.updateSubscriptions.get(valuePath)
       targetList.forEach(target => {
         target.characteristic.updateValue(target.conversion(valueValue));
+        platform.log('Updating value:',target.conversion)
         platform.log('Updating value:', valuePath, '|', valueValue, '>', target.conversion(valueValue));
       })
     } else {
