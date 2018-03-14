@@ -560,7 +560,7 @@ SignalKPlatform.prototype.addTankServices = function(accessory) {
 
   accessory.getService(Service.BatteryService)
   .getCharacteristic(Characteristic.StatusLowBattery)
-  .on('get', this.getStatusLowTank.bind(this, dataPath));
+  .on('get', this.getStatusLowTank.bind(this, dataPath, this.tankWarnCondition[accessory.context.model]));
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.StatusLowBattery)
@@ -624,12 +624,12 @@ SignalKPlatform.prototype.addBatteryServices = function(accessory) {
   // subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.ChargingState)
   // subscription.conversion = (body) =>  notChargingValues.indexOf(body) == -1 ? 1 : 0
   // subscriptionList.push(subscription)
-
-  this.updateSubscriptions.set(dataPath, subscriptionList);
-  if (this.wsInitiated) {
-    this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
-    accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
-  };
+  //
+  // this.updateSubscriptions.set(dataPath, subscriptionList);
+  // if (this.wsInitiated) {
+  //   this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
+  //   accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
+  // };
 
 
   var dataPath = accessory.context.path + '.voltage'
@@ -908,11 +908,8 @@ SignalKPlatform.prototype.getStatusLowBattery = function(path, callback) {
                 })
 }
 
-SignalKPlatform.prototype.getStatusLowTank = function(path, callback) {
-  this.getValue(path + '.value', callback,
-                (body) =>  {
-                  return Number(body) < 50;  // FIXME: Low battery voltage 23V
-                })
+SignalKPlatform.prototype.getStatusLowTank = function(path, tankWarnCondition, callback) {
+  this.getValue(path + '.value', callback, tankWarnCondition)
 }
 
 // Writes value for path to Signal K API
