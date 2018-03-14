@@ -7,7 +7,7 @@ var uuidv4 = require('uuid/v4');
 
 var Accessory, Service, Characteristic, UUIDGen;
 
-// EmpirBus:
+// EmpirBus: yyx
 //
 // Key path according to EmpirBus Application Specific PGN Data Model 2 (2x word + 8x bit) per instance:
 // 2x dimmer values 0 = off .. 1000 = 100%, 8x switch values 0 = off / 1 = on
