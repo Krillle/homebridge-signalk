@@ -17,6 +17,7 @@ var Accessory, Service, Characteristic, UUIDGen;
 
 const controlsPath = 'electrical.switches'
 const empirBusIdentifier = 'empirBusNxt'
+const venusRelaisIdentifier = 'venus'
 const putPath = '/plugins/signalk-empirbus-nxt/switches/'
 const urlPath = 'signalk/v1/api/vessels/self/'
 const wsPath = 'signalk/v1/stream?subscribe=none' // none will stream only the heartbeat, until the client issues subscribe messages in the WebSocket stream
@@ -403,7 +404,7 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
   }
 
   this.accessories.set(path, newAccessory);
-console.log(newAccessory);
+// console.log(newAccessory);
   this.api.registerPlatformAccessories("homebridge-signalk", "SignalK", [newAccessory]);
 }
 
@@ -464,7 +465,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   .getCharacteristic(Characteristic.Brightness)
   .on('get', this.getRatio.bind(this, dataPath))
   .on('set', function(value, callback) {
-    platform.log(`Set dimmer ${accessory.displayName}.Brightness to ${value}%`)
+    platform.log(`Set dimmer ${accessory.displayName}.dimmingLevel to ${value}%`)
     platform.SetRatio(accessory.context.identifier, value, ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
     callback();
   });
@@ -741,7 +742,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
 
   var tree = JSON.parse(body);
 
-  // Add electrical controls (EmpirBus NXT)
+  // Add electrical controls: EmpirBus NXT and Venus GX
   this.log("Adding electrical controls (EmpirBus NXT)");
   var controls = _.get(tree, controlsPath);
   if ( controls ) {
@@ -751,14 +752,25 @@ SignalKPlatform.prototype.processFullTree = function(body) {
             && this.noignoredPath(`${controlsPath}.${device}`)
             && !this.accessories.has(`${controlsPath}.${device}`) ) {
         var path = `${controlsPath}.${device}`;
-        var fallbackName = controls[device].name.value || controls[device].meta.displayName.value ;
+        var fallbackName = controls[device].meta.displayName.value || controls[device].name.value;
         var displayName = this.getName(path, fallbackName);
         var devicetype = controls[device].type.value;
         var manufacturer = controls[device].meta.manufacturer.name.value || "EmpirBus";
         var model = controls[device].meta.manufacturer.model.value || "NXT DCM";
 
         this.addAccessory(displayName, device, path, manufacturer, model, controls[device].name.value, controlsPath, devicetype);
-        // updateSubscriptions.push(displayName, device, path);
+      } else
+      if (device.slice(0,venusRelaisIdentifier.length) == venusRelaisIdentifier
+            && this.noignoredPath(`${controlsPath}.${device}`)
+            && !this.accessories.has(`${controlsPath}.${device}`) ) {
+        var path = `${controlsPath}.${device}`;
+        var fallbackName =  controls[device].meta.displayName.value || controls[device].name.value || device;
+        var displayName = this.getName(path, fallbackName);
+        var devicetype = "switch";
+        var manufacturer = controls[device].meta.manufacturer.name.value || "Victron Energy";
+        var model = controls[device].meta.manufacturer.model.value || "Venus GX";
+
+        this.addAccessory(displayName, device, path, manufacturer, model, device, controlsPath, devicetype);
       }
     });
   }
@@ -779,7 +791,6 @@ SignalKPlatform.prototype.processFullTree = function(body) {
       var model = `${device.displayName} Temperature Sensor`;
 
       this.addAccessory(displayName, device.key, path, manufacturer, model, displayName, environmentPath, devicetype);
-      // updateSubscriptions.push(displayName, device, path);
     }
   });
   this.log('Done');
@@ -801,7 +812,6 @@ SignalKPlatform.prototype.processFullTree = function(body) {
           var deviceKey = `${tankType}.${instance}`
 
           this.addAccessory(displayName, deviceKey, path, manufacturer, model, deviceKey, tanksPath, deviceType);
-          // updateSubscriptions.push(displayName, device, path);
         }
       })
     });
@@ -823,7 +833,6 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         var model = "Battery"; // batteries[instance].manufacturer.model.value || "Battery";
 
         this.addAccessory(displayName, instance, path, manufacturer, model, displayName, batteriesPath, devicetype);
-        // updateSubscriptions.push(displayName, device, path);
       }
     });
   }
@@ -843,7 +852,6 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         var model = "Charger"; // chargers[instance].manufacturer.model.value || "Charger";
 
         this.addAccessory(displayName, instance, path, manufacturer, model, displayName, inverterChargerPath, devicetype);
-        // updateSubscriptions.push(displayName, device, path);
       }
     });
   }
@@ -998,7 +1006,7 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
       targetList = platform.updateSubscriptions.get(valuePath)
       targetList.forEach(target => {
         target.characteristic.updateValue(target.conversion(valueValue));
-        platform.log('Updating value:',target.conversion)
+        // platform.log('Updating value:',target.conversion)
         platform.log('Updating value:', valuePath, '|', valueValue, '>', target.conversion(valueValue));
       })
     } else {
