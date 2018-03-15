@@ -60,6 +60,7 @@ const defaultLowBallastLevel = 50.0
 const batteriesPath = 'electrical.batteries'
 const inverterChargerPath = 'electrical.inverterCharger'
 const defaultLowBatteryVoltage = 23
+const defaultChargingBatteryVoltage = 26
 
 
 module.exports = function(homebridge) {
@@ -97,6 +98,12 @@ function SignalKPlatform(log, config, api) {
   this.wsInitiated = false;
 
   this.lowBatteryVoltage = Number(config.lowBatteryVoltage) || defaultLowBatteryVoltage;
+  this.chargingBatteryVoltage = Number(config.chargingBatteryVoltage) || defaultChargingBatteryVoltage;
+
+  this.batteryWarnCondition = {
+    low : (voltage) =>  Number(voltage) <= this.lowBatteryVoltage,
+    charging : (voltage) =>  Number(voltage) >= this.chargingBatteryVoltage
+  }
 
   this.lowFreshWaterLevel = Number(config.lowFreshWaterLevel) || defaultLowFreshWaterLevel;
   this.highWasteWaterLevel = Number(config.highWasteWaterLevel) || defaultHighWasteWaterLevel;
@@ -427,6 +434,8 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
 
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   var dataPath = accessory.context.path + '.state'
+  var subscriptionList = [];
+
   accessory.getService(Service.Lightbulb)
   .getCharacteristic(Characteristic.On)
   .on('get', this.getOnOff.bind(this, dataPath))
@@ -436,7 +445,6 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
     callback();
   })
 
-  var subscriptionList = [];
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.Lightbulb).getCharacteristic(Characteristic.On)
   subscription.conversion = (body) => body == true
@@ -450,6 +458,8 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
 
 
   dataPath = accessory.context.path + '.dimmingLevel'
+  subscriptionList = [];
+
   accessory.getService(Service.Lightbulb)
   .getCharacteristic(Characteristic.Brightness)
   .on('get', this.getRatio.bind(this, dataPath))
@@ -459,7 +469,6 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
     callback();
   });
 
-  subscriptionList = [];
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.Lightbulb).getCharacteristic(Characteristic.Brightness)
   subscription.conversion = (body) =>  Number(body) * 100
@@ -479,6 +488,8 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
 
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   const dataPath = accessory.context.path + '.state'
+  var subscriptionList = [];
+
   accessory.getService(Service.Switch)
   .getCharacteristic(Characteristic.On)
   .on('get', this.getOnOff.bind(this, dataPath))
@@ -488,7 +499,6 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
     callback();
   });
 
-  var subscriptionList = [];
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.Switch).getCharacteristic(Characteristic.On)
   subscription.conversion = (body) => body == true
@@ -505,11 +515,12 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
 // Add services for Temperature Sensor to existing accessory object
 SignalKPlatform.prototype.addTemperatureServices = function(accessory) {
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
+  var subscriptionList = [];
+
   accessory.getService(Service.TemperatureSensor)
   .getCharacteristic(Characteristic.CurrentTemperature)
   .on('get', this.getTemperature.bind(this, accessory.context.path));
 
-  var subscriptionList = [];
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.TemperatureSensor).getCharacteristic(Characteristic.CurrentTemperature)
   subscription.conversion = (body) =>  Number(body) - 273.15
@@ -526,11 +537,12 @@ SignalKPlatform.prototype.addTemperatureServices = function(accessory) {
 // Add services for Humidity Sensor to existing accessory object
 SignalKPlatform.prototype.addHumidityServices = function(accessory) {
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
+  var subscriptionList = [];
+
   accessory.getService(Service.HumiditySensor)
   .getCharacteristic(Characteristic.CurrentRelativeHumidity)
   .on('get', this.getRatio.bind(this, accessory.context.path));
 
-  var subscriptionList = [];
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.HumiditySensor).getCharacteristic(Characteristic.CurrentRelativeHumidity)
   subscription.conversion = (body) =>  Number(body) * 100
@@ -548,11 +560,12 @@ SignalKPlatform.prototype.addHumidityServices = function(accessory) {
 SignalKPlatform.prototype.addTankServices = function(accessory) {
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   const dataPath = accessory.context.path + '.currentLevel'
+  var subscriptionList = [];
+
   accessory.getService(Service.HumiditySensor)   // Workaround, as Home app does not show tank levels
   .getCharacteristic(Characteristic.CurrentRelativeHumidity)
   .on('get', this.getRatio.bind(this, dataPath));
 
-  var subscriptionList = [];
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.HumiditySensor).getCharacteristic(Characteristic.CurrentRelativeHumidity)
   subscription.conversion = (body) =>  Number(body) * 100
@@ -588,11 +601,12 @@ SignalKPlatform.prototype.addTankServices = function(accessory) {
 SignalKPlatform.prototype.addBatteryServices = function(accessory) {
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   var dataPath = accessory.context.path + '.capacity.stateOfCharge'
+  var subscriptionList = [];
+
   accessory.getService(Service.HumiditySensor)   // Mapped to bring SOC to main screen in Home app
   .getCharacteristic(Characteristic.CurrentRelativeHumidity)
   .on('get', this.getRatio.bind(this, dataPath));
 
-  var subscriptionList = [];
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.HumiditySensor).getCharacteristic(Characteristic.CurrentRelativeHumidity)
   subscription.conversion = (body) =>  Number(body) * 100
@@ -614,7 +628,7 @@ SignalKPlatform.prototype.addBatteryServices = function(accessory) {
   };
 
 
-  // var dataPath = accessory.context.path + '.chargingMode'
+  // dataPath = accessory.context.path + '.chargingMode'
   // accessory.getService(Service.BatteryService)
   // .getCharacteristic(Characteristic.ChargingState)
   // .on('get', this.getChargingState.bind(this, dataPath));
@@ -632,15 +646,25 @@ SignalKPlatform.prototype.addBatteryServices = function(accessory) {
   // };
 
 
-  var dataPath = accessory.context.path + '.voltage'
+  dataPath = accessory.context.path + '.voltage'
+  subscriptionList = [];
+
   accessory.getService(Service.BatteryService)
   .getCharacteristic(Characteristic.StatusLowBattery)
-  .on('get', this.getStatusLowBattery.bind(this, dataPath));
+  .on('get', this.getStatusWarnBattery.bind(this, dataPath, this.batteryWarnCondition.low));
 
-  subscriptionList = [];
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.StatusLowBattery)
-  subscription.conversion = (body) =>  Number(body) < this.lowBatteryVoltage
+  subscription.conversion = this.batteryWarnCondition.low
+  subscriptionList.push(subscription)
+
+  accessory.getService(Service.BatteryService)
+  .getCharacteristic(Characteristic.ChargingState)
+  .on('get', this.getStatusWarnBattery.bind(this, dataPath, this.batteryWarnCondition.charging));
+
+  subscription = new Object ();
+  subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.ChargingState)
+  subscription.conversion = this.batteryWarnCondition.charging
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
@@ -655,11 +679,12 @@ SignalKPlatform.prototype.addBatteryServices = function(accessory) {
 SignalKPlatform.prototype.addLeakServices = function(accessory) {
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   const dataPath = accessory.context.path + '.currentLevel'
+  var subscriptionList = [];
+
   accessory.getService(Service.LeakSensor)
   .getCharacteristic(Characteristic.LeakDetected)
   .on('get', this.getOnOff.bind(this, dataPath))
 
-  var subscriptionList = [];
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.LeakSensor).getCharacteristic(Characteristic.LeakDetected)
   subscription.conversion = (body) => body == true
@@ -901,11 +926,8 @@ SignalKPlatform.prototype.getChargingState = function(path, callback)  {
                 })
 }
 
-SignalKPlatform.prototype.getStatusLowBattery = function(path, callback) {
-  this.getValue(path + '.value', callback,
-                (body) =>  {
-                  return Number(body) < this.lowBatteryVoltage;
-                })
+SignalKPlatform.prototype.getStatusWarnBattery = function(path, batteryWarnCondition, callback) {
+  this.getValue(path + '.value', callback, batteryWarnCondition)
 }
 
 SignalKPlatform.prototype.getStatusLowTank = function(path, tankWarnCondition, callback) {

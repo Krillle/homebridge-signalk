@@ -19,19 +19,35 @@
       "name" : "Ibelle",
       "host": "127.0.0.1:3000",
 
+      "lowBatteryVoltage" : "23.5",
+      "chargingBatteryVoltage" : "25.0",
+      "lowFreshWaterLevel" : "25.0",
+      "highWasteWaterLevel" : "75.0",
+      "highBlackWaterLevel" : "75.0",
+      "lowFuelLevel" : "50.0",
+      "lowLubricationLevel" : "50.0",
+      "lowLiveWellLevel" : "50.0",
+      "lowGasLevel" : "50.0",
+      "lowBallastLevel" : "50.0",
+
       "ignoredPaths": [
-        "electrical.controls.empirBusNxt-instance0-switch3",
-        "electrical.controls.empirBusNxt-instance0-switch4",
-        "electrical.controls.empirBusNxt-instance0-switch5",
-        "electrical.controls.empirBusNxt-instance0-switch6",
-        "electrical.controls.empirBusNxt-instance0-switch7",
-        "electrical.controls.empirBusNxt-instance0-switch8"
+        "xelectrical.batteries.3",
+        "xtanks.blackWater.0",
+        "xenvironment.water.temperature",
+        "xelectrical.switches.empirBusNxt-instance0-switch1",
+        "xelectrical.switches.empirBusNxt-instance0-switch2",
+        "xelectrical.switches.empirBusNxt-instance0-switch3",
+        "xelectrical.switches.empirBusNxt-instance0-switch4",
+        "xelectrical.switches.empirBusNxt-instance0-switch5",
+        "xelectrical.switches.empirBusNxt-instance0-switch6",
+        "xelectrical.switches.empirBusNxt-instance0-switch7",
+        "xelectrical.switches.empirBusNxt-instance0-switch8"
       ],
 
       "displayNames": {
-        "electrical.controls.empirBusNxt-instance0-dimmer1": "Deckenlicht",
-        "electrical.controls.empirBusNxt-instance0-dimmer2": "Treppe",
-        "electrical.controls.empirBusNxt-instance0-switch1": "Ventilator"
+        "electrical.switches.empirBusNxt-instance0-dimmer1": "Deckenlicht",
+        "electrical.switches.empirBusNxt-instance0-dimmer2": "Treppe",
+        "electrical.switches.empirBusNxt-instance0-switch1": "Ventilator"
       },
 
       "services": [
