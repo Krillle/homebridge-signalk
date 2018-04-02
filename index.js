@@ -3,28 +3,26 @@ var request = require('request');
 var http = require('http');
 var _url = require('url');
 var websocket = require("ws");
-var uuidv4 = require('uuid/v4');
 
 var Accessory, Service, Characteristic, UUIDGen;
 
-// EmpirBus:
+const urlPath = 'signalk/v1/api/vessels/self/'
+const wsPath = 'signalk/v1/stream?subscribe=none' // none will stream only the heartbeat, until the client issues subscribe messages in the WebSocket stream
+
+// EmpirBus NXT + Venus GX
 //
 // Key path according to EmpirBus Application Specific PGN Data Model 2 (2x word + 8x bit) per instance:
 // 2x dimmer values 0 = off .. 1000 = 100%, 8x switch values 0 = off / 1 = on
 //
 // electrical.switches.empirBusNxt-instance<NXT component instance 0..49>-switch<#1..8>.state
 // electrical.switches.empirBusNxt-instance<NXT component instance 0..49>-dimmer<#1..2>.state
-
 const controlsPath = 'electrical.switches'
 const empirBusIdentifier = 'empirBusNxt'
-const venusRelaisIdentifier = 'venus'
 const putPath = '/plugins/signalk-empirbus-nxt/switches/'
-const urlPath = 'signalk/v1/api/vessels/self/'
-const wsPath = 'signalk/v1/stream?subscribe=none' // none will stream only the heartbeat, until the client issues subscribe messages in the WebSocket stream
 
+const venusRelaisIdentifier = 'venus'
 
-// Environment temperatures + humidity:
-//
+// Environment temperatures + humidity
 const environmentPath = 'environment'
 const environments = [
   { key : 'outside.temperature' , displayName : 'Outside' , devicetype : 'temperature'},
@@ -61,7 +59,14 @@ const defaultLowBallastLevel = 50.0
 const batteriesPath = 'electrical.batteries'
 const inverterChargerPath = 'electrical.inverterCharger'
 const defaultLowBatteryVoltage = 23
-const defaultChargingBatteryVoltage = 26
+const defaultChargingBatteryVoltage = 27.5
+
+// Engine data
+const enginePath = 'propulsion'
+const engines = [
+  { key : 'port.temperature' , displayName : 'Engine port' , devicetype : 'temperature'},
+  { key : 'starboard.temperature' , displayName : 'Engine starboard' , devicetype : 'temperature'}
+];
 
 
 module.exports = function(homebridge) {
@@ -164,8 +169,8 @@ function SignalKPlatform(log, config, api) {
         platform.log("Checking for unreachable devices");
         platform.accessories.forEach((accessory, key, map) => {
           platform.checkKey(accessory.context.path, (error, result) => {
-            if (error && error.message == 'device not present: 404' || !this.noignoredPath(accessory.context.path)) {
-              platform.log(`${accessory.displayName} not present`);
+            if (error && error.message == 'device not present: 404' && config.removeDevicesNotPresent || !this.noignoredPath(accessory.context.path)) {
+              platform.log(`${accessory.displayName} not present or ignored`);
               platform.removeAccessory(accessory);
             }
           })
@@ -345,7 +350,6 @@ SignalKPlatform.prototype.configurationRequestHandler = function(context, reques
 SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, devicetype) {
   var platform = this;
   var uuid = UUIDGen.generate(path);
-  // var uuid = uuidv4();
 
   this.log(`Add Accessory ${accessoryName}: ${path}, ${devicetype}`);
 
@@ -788,7 +792,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
       var displayName = this.getName(path, device.displayName);
       var devicetype = device.devicetype;
       var manufacturer = 'NMEA';
-      var model = `${device.displayName} Temperature Sensor`;
+      var model = `${device.displayName} Sensor`;
 
       this.addAccessory(displayName, device.key, path, manufacturer, model, displayName, environmentPath, devicetype);
     }
@@ -855,6 +859,25 @@ SignalKPlatform.prototype.processFullTree = function(body) {
       }
     });
   }
+  this.log('Done');
+
+  // Add engine data
+  this.log("Adding engine data");
+  engines.forEach(device => {
+    var path = `${enginePath}.${device.key}`;
+    var environment = _.get(tree, path);
+    if ( environment
+          && this.noignoredPath(path)
+          && !this.accessories.has(path) ) {
+
+      var displayName = this.getName(path, device.displayName);
+      var devicetype = device.devicetype;
+      var manufacturer = 'NMEA';
+      var model = `${device.displayName} Sensor`;
+
+      this.addAccessory(displayName, device.key, path, manufacturer, model, displayName, environmentPath, devicetype);
+    }
+  });
   this.log('Done');
 }
 
@@ -1007,7 +1030,9 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
       targetList.forEach(target => {
         target.characteristic.updateValue(target.conversion(valueValue));
         // platform.log('Updating value:',target.conversion)
-        platform.log('Updating value:', valuePath, '|', valueValue, '>', target.conversion(valueValue));
+        if (valuePath.slice(0,empirBusIdentifier.length) == empirBusIdentifier) {
+          platform.log('Updating value:', valuePath, '>', target.characteristic.displayName, '|', valueValue, '>', target.conversion(valueValue));
+        }
       })
     } else {
       platform.log('Welcome message revieced');
