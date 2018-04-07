@@ -18,7 +18,7 @@ const wsPath = 'signalk/v1/stream?subscribe=none' // none will stream only the h
 // electrical.switches.empirBusNxt-instance<NXT component instance 0..49>-dimmer<#1..2>.state
 const controlsPath = 'electrical.switches'
 const empirBusIdentifier = 'empirBusNxt'
-const putPath = '/plugins/signalk-empirbus-nxt/switches/'
+const controlsPutPath = 'electrical/switches/'
 
 const venusRelaisIdentifier = 'venus'
 
@@ -756,7 +756,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
             && this.noignoredPath(`${controlsPath}.${device}`)
             && !this.accessories.has(`${controlsPath}.${device}`) ) {
         var path = `${controlsPath}.${device}`;
-        var fallbackName = controls[device].meta.displayName.value || controls[device].name.value;
+        var fallbackName = controls[device].meta.displayName ? controls[device].meta.displayName.value : controls[device].name.value;
         var displayName = this.getName(path, fallbackName);
         var devicetype = controls[device].type.value;
         var manufacturer = controls[device].meta.manufacturer.name.value || "EmpirBus";
@@ -768,7 +768,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
             && this.noignoredPath(`${controlsPath}.${device}`)
             && !this.accessories.has(`${controlsPath}.${device}`) ) {
         var path = `${controlsPath}.${device}`;
-        var fallbackName =  controls[device].meta.displayName.value || controls[device].name.value || device;
+        var fallbackName = controls[device].meta.displayName ? controls[device].meta.displayName.value : controls[device].name.value;
         var displayName = this.getName(path, fallbackName);
         var devicetype = "switch";
         var manufacturer = controls[device].meta.manufacturer.name.value || "Victron Energy";
@@ -966,16 +966,20 @@ SignalKPlatform.prototype.getStatusLowTank = function(path, tankWarnCondition, c
 }
 
 // Writes value for path to Signal K API
-SignalKPlatform.prototype.setValue = function(device, value, cb) {
-  var url = _url.parse(this.url, true, true)
-  url = `${url.protocol}//${url.host}${putPath}${device}/${value}`
-// this.log(`PUT ${url}`)
+SignalKPlatform.prototype.setValue = function(device, context, value, cb) {
+  // var url = _url.parse(this.url, true, true)
+  // url = `${url.protocol}//${url.host}${putPath}${device}/${value}`
+
+  url = `${this.url}${controlsPutPath}${device}/${context}/`
+  this.log(`PUT ${url}`)
   request({url: url,
-           method: 'PUT'
+           method: 'PUT',
+           headers: {'Content-Type': 'application/json'},
+           body: JSON.stringify({value: value})
           },
           (error, response, body) => {
             if ( error ) {
-              this.log(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
+              this.log(`response: ${JSON.stringify(response)} body: ${JSON.stringify(body)}`)
               cb(error, null)     // FIXME: Chrashes when Signal K not reachable. callback is missing
             } else if ( response.statusCode != 200 ) {
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
@@ -989,13 +993,13 @@ SignalKPlatform.prototype.setValue = function(device, value, cb) {
 // Set brightness of path as 0..1
 SignalKPlatform.prototype.SetRatio = function(device, value, callback) {
   value = value / 100;
-  this.setValue(device, value, callback);
+  this.setValue(device, 'dimmingLevel', value, callback);
 }
 
 // Set the state of path as boolean
 SignalKPlatform.prototype.setOnOff = function(device, value, callback) {
   value = (value === true || value === "true") ? true : false;
-  this.setValue(device, value, callback);
+  this.setValue(device, 'state', value, callback);
 }
 
 // - - - - - - - WebSocket Status Update- - - - - - - - - - - - - - - - - -
