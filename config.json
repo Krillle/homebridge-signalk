@@ -18,6 +18,7 @@
       "platform" : "SignalK",
       "name" : "Ibelle",
       "host": "127.0.0.1:3000",
+      "ssl": false,
 
       "lowBatteryVoltage" : "23.5",
       "chargingBatteryVoltage" : "27.5",

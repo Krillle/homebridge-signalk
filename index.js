@@ -97,8 +97,8 @@ function SignalKPlatform(log, config, api) {
 
   this.updateSubscriptions = new Map (); // Devices to update on WebSocket
 
-  this.url = 'http://' + config.host + '/' + urlPath;
-  this.wsl = 'ws://' + config.host + '/' + wsPath;
+  this.url = 'http' + (config.ssl ? 's' : '') + '://' + config.host + '/' + urlPath;
+  this.wsl = 'ws' + (config.ssl ? 's' : '') + '://' + config.host + '/' + wsPath;
 
   this.ws = new websocket(this.wsl);
   this.wsInitiated = false;
