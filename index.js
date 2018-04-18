@@ -998,7 +998,7 @@ SignalKPlatform.prototype.SetRatio = function(device, value, callback) {
 
 // Set the state of path as boolean
 SignalKPlatform.prototype.setOnOff = function(device, value, callback) {
-  value = (value === true || value === "true") ? true : false;
+  value = (value === true || value === "true") ? 1 : 0;
   this.setValue(device, 'state', value, callback);
 }
 
