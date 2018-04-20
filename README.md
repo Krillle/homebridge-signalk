@@ -104,9 +104,9 @@ The plugin awaits and accepts the following settings in the Homebridge `config.j
 `"lowGasLevel" : "50.0"` Low tank (battery) warning if tank level is at or below  
 `"lowBallastLevel" : "50.0"` Low tank (battery) warning if tank level is at or below  
 
-`"removeDevicesNotPresent": false` If set to `true` devices not present in API keys are removed from HomeKit  
+`"removeDevicesNotPresent": false` If set to `true` devices which are not present in API keys (after restart of Signal K server) are removed from HomeKit (at start of Homebridge server)
 
-`"ignoredPaths": ["key","key"]` List of API keys for which you don't want to have a device in HomeKit. Devices will be deleted from HomeKit if present already.  
+`"ignoredPaths": ["key","key"]` List of API keys for which you don't want to have a device in HomeKit. Devices will be deleted from HomeKit if already present.  
 
 `"displayNames": ["key":"Display Name","key":"Display Name"]` List of API keys and display names to use for them in HomeKit. Saves the effort to rename the in HomeKit manually. Spaces and Umlaut are allowed.  
 
