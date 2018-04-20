@@ -24,10 +24,10 @@ The following Signal K standard keys are mapped to temperature and humidity sens
 /environment/inside/refrigerator/temperature/  
 /environment/inside/freezer/temperature/  
 /environment/inside/heating/temperature/  
-/environment/water/temperature/
+/environment/water/temperature/  
 
-/propulsion/port/temperature/
-/propulsion/starboard/temperature/
+/propulsion/port/temperature/  
+/propulsion/starboard/temperature/  
 
 /environment/outside/humidity/  
 /environment/inside/humidity/  
