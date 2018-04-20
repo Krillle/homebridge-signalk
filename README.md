@@ -89,7 +89,7 @@ The plugin awaits and accepts the following settings in the Homebridge `config.j
 `"platform" : "SignalK"`  
 `"host": "127.0.0.1:3000"` IP address and port of Signal K server  
 
-### Optional parameters and their default values im omitted:
+### Optional parameters and their default values if omitted:
 `"name" : "NameOfVessel"`  
 `"ssl": false` Set to `true` if Signal K server is awating connections via SSL  
 
