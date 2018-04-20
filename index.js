@@ -767,12 +767,18 @@ SignalKPlatform.prototype.processFullTree = function(body) {
       if (device.slice(0,venusRelaisIdentifier.length) == venusRelaisIdentifier
             && this.noignoredPath(`${controlsPath}.${device}`)
             && !this.accessories.has(`${controlsPath}.${device}`) ) {
+console.log(JSON.stringify(controls[device]))
         var path = `${controlsPath}.${device}`;
-        var fallbackName = controls[device].meta.displayName ? controls[device].meta.displayName.value : controls[device].name.value;
+        var fallbackName = controls[device].meta.displayName ? (controls[device].meta.displayName.value ? controls[device].meta.displayName.value : controls[device].meta.displayName) : controls[device].name.value;
         var displayName = this.getName(path, fallbackName);
         var devicetype = "switch";
-        var manufacturer = controls[device].meta.manufacturer.name.value || "Victron Energy";
-        var model = controls[device].meta.manufacturer.model.value || "Venus GX";
+        var manufacturer = _.get(controls[device], "meta.manufacturer.name.value") || "Victron Energy";
+        var model = _.get(controls[device], "meta.manufacturer.model.value") || "Venus GX";
+
+        if ( !fallbackName ) {
+          let parts = device.split('.')
+          fallbackName = parts[parts.length-1]
+        }
 
         this.addAccessory(displayName, device, path, manufacturer, model, device, controlsPath, devicetype);
       }
