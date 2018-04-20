@@ -143,28 +143,7 @@
         "electrical.switches.empirBusNxt-instance22-dimmer1":"Stufen",
         "electrical.switches.empirBusNxt-instance22-dimmer2":"Lichtleiste",
         "electrical.switches.empirBusNxt-instance24-dimmer1":"Gangborde"
-      },
-
-      "services": [
-        {
-          "type": "switch",
-          "name": "Deckenlicht",
-          "subtype": "house",
-          "path": "electrical/empirBusNext/0/dimmers/0"
-        },
-        {
-          "type": "switch",
-          "name": "Treppe",
-          "subtype": "house",
-          "path": "electrical/empirBusNext/0/dimmers/1"
-        },
-        {
-          "type": "fan",
-          "name": "Badezimmer Ventilator",
-          "subtype": "house",
-          "path": "electrical/empirBusNext/0/switches/0"
-        }
-      ]
+      }
     }
 
     ]

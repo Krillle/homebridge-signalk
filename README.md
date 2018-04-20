@@ -110,5 +110,3 @@ The plugin awaits and accepts the following settings in the Homebridge `config.j
 `"ignoredPaths": ["key","key"]` List of API keys for which you don't want to have a device in HomeKit. Devices will be deleted from HomeKit if already present.  
 
 `"displayNames": ["key":"Display Name","key":"Display Name"]` List of API keys and reespective display names to use for them in HomeKit. Saves the effort to rename them in HomeKit manually. Spaces and Umlauts are allowed.  
-
-`"services"` Not implemented yet.  
