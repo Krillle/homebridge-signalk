@@ -1,4 +1,5 @@
 # homebridge-signalk
+<img src="https://github.com/Krillle/homebridge-signalk/demodata/signalk-homekit.png" align="right" alt="Signak K in Home App">
 
 This a plugin for the Homebridge server, which maps API keys of a Signal K server to matching HomeKit devices.
 
