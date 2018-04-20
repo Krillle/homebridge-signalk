@@ -1,7 +1,7 @@
 # homebridge-signalk
 <img src="demodata/signalk-homekit.png" align="right" alt="Signak K in Home App">
 
-This a plugin for the Homebridge server, which maps API keys of a Signal K server to matching HomeKit devices.
+This is a plugin for the Homebridge server, which maps API keys of a Signal K server to matching HomeKit devices.
 
 ## General Prerequisites:
 The plugin fills the gap between Homebridge and Signal K, so you need both up and running:
@@ -10,7 +10,7 @@ The plugin fills the gap between Homebridge and Signal K, so you need both up an
 
 
 ## Mapped API keys and devices:
-The plugin maps the follwoing [Signal K API keys](http://signalk.org/specification/1.0.0/doc/vesselsBranch.html) to suitable HomeKit devices:
+The plugin maps the following [Signal K API keys](http://signalk.org/specification/1.0.0/doc/vesselsBranch.html) to suitable HomeKit devices:
 
 ### Environment
 The following Signal K standard keys are mapped to temperature and humidity sensors:
@@ -92,7 +92,7 @@ The plugin awaits and accepts the following settings in the Homebridge `config.j
 
 ### Optional parameters and their default values if omitted:
 `"name" : "NameOfVessel"`  
-`"ssl": false` Set to `true` if Signal K server is awating connections via SSL  
+`"ssl": false` Set to `true` if Signal K server is awaiting connections via SSL  
 
 `"lowBatteryVoltage" : "23.5"` Low battery warning if battery voltage is at or below  
 `"chargingBatteryVoltage" : "27.5"`Battery shown as charging if battery voltage is at or above  
