@@ -100,7 +100,12 @@ function SignalKPlatform(log, config, api) {
   this.url = 'http' + (config.ssl ? 's' : '') + '://' + config.host + '/' + urlPath;
   this.wsl = 'ws' + (config.ssl ? 's' : '') + '://' + config.host + '/' + wsPath;
 
-  this.ws = new websocket(this.wsl);
+  let wsOptions = {}
+  if ( config.securityToken) {
+    wsOptions.headers = { 'Authorization': 'JWT ' + config.securityToken }
+    this.securityToken = config.securityToken
+  }
+  this.ws = new websocket(this.wsl, "ws", wsOptions);
   this.wsInitiated = false;
 
   this.lowBatteryVoltage = Number(config.lowBatteryVoltage) || defaultLowBatteryVoltage;
@@ -972,9 +977,16 @@ SignalKPlatform.prototype.setValue = function(device, context, value, cb) {
 
   url = `${this.url}${controlsPutPath}${device}/${context}/`
   this.log(`PUT ${url}`)
+
+  let headers = {
+    'Content-Type': 'application/json',
+  }
+  if ( this.securityToken ) {
+    headers['Authorization'] = 'JWT ' + this.securityToken
+  }
   request({url: url,
            method: 'PUT',
-           headers: {'Content-Type': 'application/json'},
+           headers: headers,
            body: JSON.stringify({value: value})
           },
           (error, response, body) => {
