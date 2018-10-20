@@ -235,7 +235,10 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
     case 'battery' || 'charger':
       this.addBatteryServices(accessory);
       break;
-  }
+    case 'leak':
+      this.addLeakServices(accessory);
+      break;
+}
 
   this.accessories.set(accessory.context.path, accessory);
 }
@@ -407,9 +410,9 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
       this.addBatteryServices(newAccessory);
       break;
     case 'leak':
-        newAccessory.addService(Service.LeakSensor, accessoryName)
-        this.addLeakServices(newAccessory);
-        break;
+      newAccessory.addService(Service.LeakSensor, accessoryName)
+      this.addLeakServices(newAccessory);
+      break;
   }
 
   this.accessories.set(path, newAccessory);
@@ -688,7 +691,7 @@ SignalKPlatform.prototype.addBatteryServices = function(accessory) {
 // Add services for Leak Sensor to existing accessory object
 SignalKPlatform.prototype.addLeakServices = function(accessory) {
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
-  const dataPath = accessory.context.path + '.currentLevel'
+  const dataPath = accessory.context.path + '.state'
   var subscriptionList = [];
 
   accessory.getService(Service.LeakSensor)
