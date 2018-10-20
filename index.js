@@ -214,7 +214,7 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
   })
 
   // FIXME: Ignored paths are added anyway
-  // FIXME: Results in chrash ws updates when ingoredor unreachable device is deleted afterwards
+  // FIXME: Results in crash ws updates when ignored or unreachable device is deleted afterwards
   // Add Device Services
   switch(accessory.context.devicetype) {
     case 'switch':
