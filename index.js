@@ -734,7 +734,14 @@ SignalKPlatform.prototype.removeAccessory = function(accessory) {
 SignalKPlatform.prototype.autodetectNewAccessories = function() {
   this.log("Autodecting " + this.url);
 
-  request(this.url,
+  let headers = {}
+
+  if ( this.securityToken ) {
+    headers['Authorization'] = 'JWT ' + this.securityToken
+  }
+  
+  request({url: this.url,
+           headers: headers},
           (error, response, body) => {
             if ( error ) {
               this.log(`error: ${error}`);
@@ -908,8 +915,15 @@ SignalKPlatform.prototype.noignoredPath = function(path) {
 // Reads value for path from Signal K API
 SignalKPlatform.prototype.getValue = function(path, cb, conversion) {
   var url = this.url + path.replace(/\./g, '/')
-// this.log(`GET ${url}`)
-  request(url,
+  // this.log(`GET ${url}`)
+  let headers = {}
+
+  if ( this.securityToken ) {
+    headers['Authorization'] = 'JWT ' + this.securityToken
+  }
+  
+  request({url: url,
+           headers: headers},
           (error, response, body) => {
             if ( error ) {
 //            this.log(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
