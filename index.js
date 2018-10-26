@@ -742,7 +742,7 @@ SignalKPlatform.prototype.autodetectNewAccessories = function() {
   if ( this.securityToken ) {
     headers['Authorization'] = 'JWT ' + this.securityToken
   }
-  
+
   request({url: this.url,
            headers: headers},
           (error, response, body) => {
@@ -762,7 +762,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
   var tree = JSON.parse(body);
 
   // Add electrical controls: EmpirBus NXT and Venus GX
-  this.log("Adding electrical controls (EmpirBus NXT)");
+  this.log("Adding electrical controls (EmpirBus NXT and Venus GX)");
   var controls = _.get(tree, controlsPath);
   if ( controls ) {
     _.keys(controls).forEach(device => {
@@ -783,11 +783,11 @@ SignalKPlatform.prototype.processFullTree = function(body) {
             && this.noignoredPath(`${controlsPath}.${device}`)
             && !this.accessories.has(`${controlsPath}.${device}`) ) {
         var path = `${controlsPath}.${device}`;
-        var fallbackName = controls[device].meta.displayName ? (controls[device].meta.displayName.value ? controls[device].meta.displayName.value : controls[device].meta.displayName) : controls[device].name.value;
+        var fallbackName = controls[device].name.value; // FIXME: catch error in case of missing Metadata: controls[device].meta.displayName ? (controls[device].meta.displayName.value ? controls[device].meta.displayName.value : controls[device].meta.displayName) : controls[device].name.value;
         var displayName = this.getName(path, fallbackName);
         var devicetype = "switch";
-        var manufacturer = _.get(controls[device], "meta.manufacturer.name.value") || "Victron Energy";
-        var model = _.get(controls[device], "meta.manufacturer.model.value") || "Venus GX";
+        var manufacturer = "Victron Energy"; // FIXME: catch error in case of missing Metadata: _.get(controls[device], "meta.manufacturer.name.value") || "Victron Energy";
+        var model = "Venus GX"; // FIXME: catch error in case of missing Metadata: _.get(controls[device], "meta.manufacturer.model.value") || "Venus GX";
 
         if ( !fallbackName ) {
           let parts = device.split('.')
@@ -924,7 +924,7 @@ SignalKPlatform.prototype.getValue = function(path, cb, conversion) {
   if ( this.securityToken ) {
     headers['Authorization'] = 'JWT ' + this.securityToken
   }
-  
+
   request({url: url,
            headers: headers},
           (error, response, body) => {
