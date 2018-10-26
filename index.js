@@ -782,6 +782,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
       if (device.slice(0,venusRelaisIdentifier.length) == venusRelaisIdentifier
             && this.noignoredPath(`${controlsPath}.${device}`)
             && !this.accessories.has(`${controlsPath}.${device}`) ) {
+        this.log(`Preparing Venus GX device ${JSON.stringify(controls[device])}`);
         var path = `${controlsPath}.${device}`;
         var fallbackName = controls[device].name.value; // FIXME: catch error in case of missing Metadata: controls[device].meta.displayName ? (controls[device].meta.displayName.value ? controls[device].meta.displayName.value : controls[device].meta.displayName) : controls[device].name.value;
         var displayName = this.getName(path, fallbackName);
