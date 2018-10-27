@@ -3,7 +3,7 @@
 
 This is a plugin for the Homebridge server, which maps API keys of a Signal K server to matching [HomeKit](https://www.apple.com/ios/home/) devices.
 
-Use this plugin to read and in case of switches and dimmers even control your boat's devices from your iPhone, iPad, Apple Watch, Apple TV or HomePod. Use an Apple TV 4 to read and control remotely.
+Use this plugin to read and in case of switches and dimmers even control your boat's devices from your iPhone, iPad, Apple Watch, Apple TV or HomePod. Having an Apple TV 4 or HomePod in your LAN you can read and control even remotely.
 
 ## General Prerequisites:
 The plugin fills the gap between Homebridge and Signal K, so you need both up and running:
