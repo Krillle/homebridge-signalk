@@ -58,7 +58,9 @@ const defaultLowBallastLevel = 50.0
 // Batteries and chargers
 const batteriesPath = 'electrical.batteries'
 const inverterChargerPath = 'electrical.inverterCharger'
+const defaultEmptyBatteryVoltage = 22
 const defaultLowBatteryVoltage = 23
+const defaultFullBatteryVoltage = 26
 const defaultChargingBatteryVoltage = 27.5
 
 // Engine data
@@ -108,8 +110,14 @@ function SignalKPlatform(log, config, api) {
   this.ws = new websocket(this.wsl, "ws", wsOptions);
   this.wsInitiated = false;
 
+  this.emptyBatteryVoltage = Number(config.emptyBatteryVoltage) || defaultEmptyBatteryVoltage;
   this.lowBatteryVoltage = Number(config.lowBatteryVoltage) || defaultLowBatteryVoltage;
+  this.fullBatteryVoltage = Number(config.fullBatteryVoltage) || defaultFullBatteryVoltage;
   this.chargingBatteryVoltage = Number(config.chargingBatteryVoltage) || defaultChargingBatteryVoltage;
+
+  // this.batteryStateOfCharge = {
+  //   (voltage) =>  (Number(voltage) - this.emptyBatteryVoltage) / (this.fullBatteryVoltage - this.emptyBatteryVoltage) * 100
+  // }
 
   this.batteryWarnCondition = {
     low : (voltage) =>  Number(voltage) <= this.lowBatteryVoltage,
@@ -233,7 +241,14 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
       this.addTankServices(accessory);
       break;
     case 'battery' || 'charger':
-      this.addBatteryServices(accessory);
+      newAccessory.addService(Service.HumiditySensor, accessoryName) // Used as main accessory
+      newAccessory.addService(Service.BatteryService, accessoryName)
+      this.addVoltageBatteryServices(newAccessory);
+      break;
+    case 'batterySOC':
+      newAccessory.addService(Service.HumiditySensor, accessoryName) // Used as main accessory
+      newAccessory.addService(Service.BatteryService, accessoryName)
+      this.addSOCBatteryServices(newAccessory);
       break;
     case 'leak':
       this.addLeakServices(accessory);
@@ -407,7 +422,12 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
     case 'battery' || 'charger':
       newAccessory.addService(Service.HumiditySensor, accessoryName) // Used as main accessory
       newAccessory.addService(Service.BatteryService, accessoryName)
-      this.addBatteryServices(newAccessory);
+      this.addVoltageBatteryServices(newAccessory);
+      break;
+    case 'batterySOC':
+      newAccessory.addService(Service.HumiditySensor, accessoryName) // Used as main accessory
+      newAccessory.addService(Service.BatteryService, accessoryName)
+      this.addSOCBatteryServices(newAccessory);
       break;
     case 'leak':
       newAccessory.addService(Service.LeakSensor, accessoryName)
@@ -611,12 +631,80 @@ SignalKPlatform.prototype.addTankServices = function(accessory) {
 
 
 // Add services for Batteries (with Humidity Sensor as main accessory) to existing accessory object
-SignalKPlatform.prototype.addBatteryServices = function(accessory) {
+SignalKPlatform.prototype.addVoltageBatteryServices = function(accessory) {
+  // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
+  var dataPath = accessory.context.path + '.voltage'
+  var subscriptionList = [];
+
+  accessory.getService(Service.HumiditySensor)   // Mapped to use humidity sensor to show SOC in Home app
+  .getCharacteristic(Characteristic.CurrentRelativeHumidity)
+  .on('get', this.getRatio.bind(this, dataPath));
+
+  subscription = new Object ();
+  subscription.characteristic = accessory.getService(Service.HumiditySensor).getCharacteristic(Characteristic.CurrentRelativeHumidity)
+  subscription.conversion = (voltage) =>  (Number(voltage) - this.emptyBatteryVoltage) / (this.fullBatteryVoltage - this.emptyBatteryVoltage) * 100
+  subscriptionList.push(subscription)
+
+  accessory.getService(Service.BatteryService)
+  .getCharacteristic(Characteristic.BatteryLevel)
+  .on('get', this.getRatio.bind(this, dataPath));
+
+  subscription = new Object ();
+  subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.BatteryLevel)
+  subscription.conversion = (voltage) =>  (Number(voltage) - this.emptyBatteryVoltage) / (this.fullBatteryVoltage - this.emptyBatteryVoltage) * 100
+  subscriptionList.push(subscription)
+
+  accessory.getService(Service.BatteryService)
+  .getCharacteristic(Characteristic.StatusLowBattery)
+  .on('get', this.getStatusWarnBattery.bind(this, dataPath, this.batteryWarnCondition.low));
+
+  subscription = new Object ();
+  subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.StatusLowBattery)
+  subscription.conversion = this.batteryWarnCondition.low
+  subscriptionList.push(subscription)
+
+  accessory.getService(Service.BatteryService)
+  .getCharacteristic(Characteristic.ChargingState)
+  .on('get', this.getStatusWarnBattery.bind(this, dataPath, this.batteryWarnCondition.charging));
+
+  subscription = new Object ();
+  subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.ChargingState)
+  subscription.conversion = this.batteryWarnCondition.charging
+  subscriptionList.push(subscription)
+
+  this.updateSubscriptions.set(dataPath, subscriptionList);
+  if (this.wsInitiated) {
+    this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
+    accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
+  };
+
+  // dataPath = accessory.context.path + '.chargingMode'
+  // accessory.getService(Service.BatteryService)
+  // .getCharacteristic(Characteristic.ChargingState)
+  // .on('get', this.getChargingState.bind(this, dataPath));
+  //
+  // subscriptionList = [];
+  // subscription = new Object ();
+  // subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.ChargingState)
+  // subscription.conversion = (body) =>  notChargingValues.indexOf(body) == -1 ? 1 : 0
+  // subscriptionList.push(subscription)
+  //
+  // this.updateSubscriptions.set(dataPath, subscriptionList);
+  // if (this.wsInitiated) {
+  //   this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
+  //   accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
+  // };
+
+}
+
+
+// Add services for SOC Batteries (with Humidity Sensor as main accessory) to existing accessory object
+SignalKPlatform.prototype.addSOCBatteryServices = function(accessory) {
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   var dataPath = accessory.context.path + '.capacity.stateOfCharge'
   var subscriptionList = [];
 
-  accessory.getService(Service.HumiditySensor)   // Mapped to bring SOC to main screen in Home app
+  accessory.getService(Service.HumiditySensor)   // Mapped to use humidity sensor to show SOC in Home app
   .getCharacteristic(Characteristic.CurrentRelativeHumidity)
   .on('get', this.getRatio.bind(this, dataPath));
 
@@ -853,9 +941,9 @@ SignalKPlatform.prototype.processFullTree = function(body) {
             && !this.accessories.has(path) ) {
 
         var displayName = this.getName(path, `Battery ${instance}`);
-        var devicetype = 'battery';
-        var manufacturer = "NMEA"; // batteries[instance].manufacturer.name.value || "NMEA";
-        var model = "Battery"; // batteries[instance].manufacturer.model.value || "Battery";
+        var devicetype = batteries[instance].capacity.stateOfCharge ? 'batterySOC' : 'battery';
+        var manufacturer = "NMEA"; // FIXME: batteries[instance].manufacturer.name.value || "NMEA";
+        var model = "Battery"; // FIXME: batteries[instance].manufacturer.model.value || "Battery";
 
         this.addAccessory(displayName, instance, path, manufacturer, model, displayName, batteriesPath, devicetype);
       }

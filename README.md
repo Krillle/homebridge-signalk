@@ -98,7 +98,9 @@ The plugin awaits and accepts the following settings in the Homebridge `config.j
 `"name" : "NameOfVessel"`  
 `"ssl": false` Set to `true` if Signal K server is awaiting connections via SSL  
 
+`"emptyBatteryVoltage" : "22.5"` Battery SOC shown as 0% (ignored if SOC is reported from battery itself)
 `"lowBatteryVoltage" : "23.5"` Low battery warning if battery voltage is at or below  
+`"fullBatteryVoltage" : "26.5"` Battery SOC shown as 100% (ignored if SOC is reported from battery itself)
 `"chargingBatteryVoltage" : "27.5"`Battery shown as charging if battery voltage is at or above  
 `"lowFreshWaterLevel" : "25.0"` Low tank (battery) warning if tank level is at or below  
 `"highWasteWaterLevel" : "75.0"` Low battery warning if tank level is at or above  

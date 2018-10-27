@@ -6,7 +6,7 @@
         "pin": "031-45-154"
     },
 
-    "description": "This is a sample configuration file for Signal K plugin.",
+    "description": "This is a sample configuration file for Signal K plugin. Adjust battery voltage accordingly on 12V systems.",
 
     "accessories": [
 
@@ -20,7 +20,9 @@
       "host": "127.0.0.1:3000",
       "ssl": false,
 
+      "emptyBatteryVoltage" : "22.5",
       "lowBatteryVoltage" : "23.5",
+      "fullBatteryVoltage" : "26.5",
       "chargingBatteryVoltage" : "27.5",
       "lowFreshWaterLevel" : "25.0",
       "highWasteWaterLevel" : "75.0",
