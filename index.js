@@ -866,6 +866,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
       if (device.slice(0,venusRelaisIdentifier.length) == venusRelaisIdentifier
             && this.noignoredPath(`${controlsPath}.${device}`)
             && !this.accessories.has(`${controlsPath}.${device}`) ) {
+              
         this.log(`Preparing Venus GX device ${JSON.stringify(controls[device])}`);
         var path = `${controlsPath}.${device}`;
         var fallbackName = controls[device].name.value; // FIXME: catch error in case of missing Metadata: controls[device].meta.displayName ? (controls[device].meta.displayName.value ? controls[device].meta.displayName.value : controls[device].meta.displayName) : controls[device].name.value;
@@ -936,6 +937,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
       if (this.noignoredPath(path)
             && !this.accessories.has(path) ) {
 
+        this.log(`Preparing battery device ${JSON.stringify(batteries[instance])}`);
         var displayName = this.getName(path, `Battery ${instance}`);
         var devicetype = batteries[instance].capacity ? 'batterySOC' : 'battery';
         var manufacturer = "NMEA"; // FIXME: batteries[instance].manufacturer.name.value || "NMEA";
