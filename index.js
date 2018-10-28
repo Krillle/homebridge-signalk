@@ -241,14 +241,10 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
       this.addTankServices(accessory);
       break;
     case 'battery' || 'charger':
-      newAccessory.addService(Service.HumiditySensor, accessoryName) // Used as main accessory
-      newAccessory.addService(Service.BatteryService, accessoryName)
-      this.addVoltageBatteryServices(newAccessory);
+      this.addVoltageBatteryServices(accessory);
       break;
     case 'batterySOC':
-      newAccessory.addService(Service.HumiditySensor, accessoryName) // Used as main accessory
-      newAccessory.addService(Service.BatteryService, accessoryName)
-      this.addSOCBatteryServices(newAccessory);
+      this.addSOCBatteryServices(accessory);
       break;
     case 'leak':
       this.addLeakServices(accessory);
