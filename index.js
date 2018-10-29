@@ -1135,7 +1135,7 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
   });
 
   var subscriptionMessage = `{"context": "vessels.self","subscribe":${JSON.stringify(subscriptionPaths)}}`
-  platform.log(subscriptionMessage); // --
+  // platform.log(subscriptionMessage); // --
 
   this.ws.on('open', function open() {
     platform.ws.send(subscriptionMessage);
@@ -1143,7 +1143,7 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
   });
 
   this.ws.on('message', function incoming(data) {
-    platform.log(data); // --
+    // platform.log(data); // --
     message = JSON.parse(data)
 
     if ( _.hasIn(message, 'updates') ) {
@@ -1155,7 +1155,7 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
       targetList = platform.updateSubscriptions.get(valuePath)
       targetList.forEach(target => {
         target.characteristic.updateValue(target.conversion(valueValue));
-        platform.log('Updating value:',target.conversion) // --
+        // platform.log('Updating value:',target.conversion) // --
         if (valuePath.slice(0,empirBusIdentifier.length) == empirBusIdentifier) {
           platform.log('Updating value:', valuePath, '>', target.characteristic.displayName, '|', valueValue, '>', target.conversion(valueValue));
         }
