@@ -1161,7 +1161,7 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
         }
       })
     } else {
-      platform.log('Welcome message revieced');
+      platform.log('Welcome message recieved');
     }
 
   });
