@@ -869,7 +869,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
               
         this.log(`Preparing Venus GX device ${JSON.stringify(controls[device])}`);
         var path = `${controlsPath}.${device}`;
-        var fallbackName = controls[device].name.value; // FIXME: catch error in case of missing Metadata: controls[device].meta.displayName ? (controls[device].meta.displayName.value ? controls[device].meta.displayName.value : controls[device].meta.displayName) : controls[device].name.value;
+        var fallbackName = device; // FIXME: catch error in case of missing Metadata: controls[device].meta.displayName ? (controls[device].meta.displayName.value ? controls[device].meta.displayName.value : controls[device].meta.displayName) : controls[device].name.value;
         var displayName = this.getName(path, fallbackName);
         var devicetype = "switch";
         var manufacturer = "Victron Energy"; // FIXME: catch error in case of missing Metadata: _.get(controls[device], "meta.manufacturer.name.value") || "Victron Energy";
