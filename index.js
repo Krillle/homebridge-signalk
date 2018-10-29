@@ -866,7 +866,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
       if (device.slice(0,venusRelaisIdentifier.length) == venusRelaisIdentifier
             && this.noignoredPath(`${controlsPath}.${device}`)
             && !this.accessories.has(`${controlsPath}.${device}`) ) {
-              
+
         this.log(`Preparing Venus GX device ${device} ${JSON.stringify(controls[device])}`);
         var path = `${controlsPath}.${device}`;
         var fallbackName = device; // FIXME: catch error in case of missing Metadata: controls[device].meta.displayName ? (controls[device].meta.displayName.value ? controls[device].meta.displayName.value : controls[device].meta.displayName) : controls[device].name.value;
@@ -1104,7 +1104,7 @@ SignalKPlatform.prototype.setValue = function(device, context, value, cb) {
               cb(error, null)     // FIXME: Chrashes when Signal K not reachable. callback is missing
             } else if ( response.statusCode != 200 ) {
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
-              cb(new Error(`invalid response ${response.statusCode}`), null)
+              cb(new Error(`invalid response ${response.statusCode}`), null)     // FIXME: Chrashes when Signal K not reachable. callback is missing
             } else {
 //              cb(null, null)
             }
