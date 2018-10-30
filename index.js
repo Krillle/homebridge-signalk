@@ -941,7 +941,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         var displayName = this.getName(path, `Battery ${instance}`);
         var devicetype = batteries[instance].capacity ? 'batterySOC' : 'battery';
         var manufacturer = "NMEA"; // FIXME: batteries[instance].manufacturer.name.value || "NMEA";
-        var model = "Battery"; // FIXME: batteries[instance].manufacturer.model.value || "Battery";
+        var model = batteries[instance].capacity ? 'Battery SOC' : 'Battery'; // FIXME: batteries[instance].manufacturer.model.value || "Battery";
 
         this.addAccessory(displayName, instance, path, manufacturer, model, displayName, batteriesPath, devicetype);
       }
