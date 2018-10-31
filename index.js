@@ -454,7 +454,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
     // console.log(stateBefore);
 
     // Off/On/Off/Restore cycle
-    platform.setOnOff(accessory.context.identifier, false ()=> {console.log('FIXME: Device unreachable');});
+    platform.setOnOff(accessory.context.identifier, false, ()=> {console.log('FIXME: Device unreachable');});
     setTimeout(()=>{platform.setOnOff(accessory.context.identifier, true, ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
                    }, 250);
     setTimeout(()=>{platform.setOnOff(accessory.context.identifier, false, ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
