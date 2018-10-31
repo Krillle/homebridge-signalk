@@ -1108,7 +1108,7 @@ SignalKPlatform.prototype.setValue = function(device, context, value, cb) {
               cb(error, null)     // FIXME: Chrashes when Signal K not reachable. callback is missing
             } else if ( response.statusCode != 200 ) {
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
-              cb(new Error(`invalid response ${response.statusCode}`), null)     // FIXME: Chrashes when Signal K not reachable. callback is missing
+              cb() // cb(new Error(`invalid response ${response.statusCode}`), null)     // FIXME: Chrashes when Signal K not reachable. callback is missing
             } else {
 //              cb(null, null)
             }
