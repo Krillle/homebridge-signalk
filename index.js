@@ -92,6 +92,11 @@ module.exports = function(homebridge) {
 // api may be null if launched from old homebridge version
 function SignalKPlatform(log, config, api) {
   log("SignalKPlatform Init");
+
+  if not (config.host) {
+    log ("No host configuration found."); exit;
+  }
+
   var platform = this;
   this.log = log;
   this.config = config;
@@ -99,11 +104,11 @@ function SignalKPlatform(log, config, api) {
 
   this.updateSubscriptions = new Map (); // Devices to update on WebSocket
 
-  this.url = 'http' + (config.ssl ? 's' : '') + '://' + config.host + '/' + urlPath;
-  this.wsl = 'ws' + (config.ssl ? 's' : '') + '://' + config.host + '/' + wsPath;
+  this.url = 'http' + (config.ssl ? 's' : '') + '://' + config.host + '/' + urlPath;  // FIXME: Crashes when no configuration is found
+  this.wsl = 'ws' + (config.ssl ? 's' : '') + '://' + config.host + '/' + wsPath;     // FIXME: Crashes when no configuration is found
 
   let wsOptions = {}
-  if ( config.securityToken) {
+  if (config.securityToken) {
     wsOptions.headers = { 'Authorization': 'JWT ' + config.securityToken }
     this.securityToken = config.securityToken
   }
