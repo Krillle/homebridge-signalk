@@ -93,8 +93,8 @@ module.exports = function(homebridge) {
 function SignalKPlatform(log, config, api) {
   log("SignalKPlatform Init");
 
-  if (!(config)) { log ("No configuration found."); exit; }
-  if (!(config.host)) { log ("No host configuration found."); exit; }
+  if (!(config)) { log ("No configuration found."); break; }
+  if (!(config.host)) { log ("No host configuration found."); break; }
 
   var platform = this;
   this.log = log;
