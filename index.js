@@ -103,8 +103,8 @@ function SignalKPlatform(log, config, api) {
 
   this.updateSubscriptions = new Map (); // Devices to update on WebSocket
 
-  this.url = 'http' + (config.ssl ? 's' : '') + '://' + config.host + '/' + urlPath;  // FIXME: Crashes when no configuration is found
-  this.wsl = 'ws' + (config.ssl ? 's' : '') + '://' + config.host + '/' + wsPath;     // FIXME: Crashes when no configuration is found
+  this.url = 'http' + (config.ssl ? 's' : '') + '://' + config.host + '/' + urlPath;
+  this.wsl = 'ws' + (config.ssl ? 's' : '') + '://' + config.host + '/' + wsPath;
 
   let wsOptions = {}
   if (config.securityToken) {
@@ -1105,12 +1105,12 @@ SignalKPlatform.prototype.setValue = function(device, context, value, cb) {
           (error, response, body) => {
             if ( error ) {
               this.log(`response: ${JSON.stringify(response)} body: ${JSON.stringify(body)}`)
-              cb(error, null)     // FIXME: Chrashes when Signal K not reachable. callback is missing
+              // FIXME: cb(error, null)     // Chrashes when Signal K not reachable. callback is missing
             } else if ( response.statusCode != 200 ) {
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
-              cb() // cb(new Error(`invalid response ${response.statusCode}`), null)     // FIXME: Chrashes when Signal K not reachable. callback is missing
+              // FIXME: cb(new Error(`invalid response ${response.statusCode}`), null)     // Chrashes when Signal K not reachable. callback is missing
             } else {
-//              cb(null, null)
+              // FIXME: cb(null, null)
             }
           })
 }
