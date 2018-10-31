@@ -454,7 +454,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
     // console.log(stateBefore);
 
     // Off/On/Off/Restore cycle
-    platform.setOnOff(accessory.context.identifier, false);
+    platform.setOnOff(accessory.context.identifier, false ()=> {console.log('FIXME: Device unreachable');});
     setTimeout(()=>{platform.setOnOff(accessory.context.identifier, true, ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
                    }, 250);
     setTimeout(()=>{platform.setOnOff(accessory.context.identifier, false, ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
@@ -1105,12 +1105,12 @@ SignalKPlatform.prototype.setValue = function(device, context, value, cb) {
           (error, response, body) => {
             if ( error ) {
               this.log(`response: ${JSON.stringify(response)} body: ${JSON.stringify(body)}`)
-              // FIXME: cb(error, null)     // Chrashes when Signal K not reachable. callback is missing
+              cb(error, null)     // Crashes when Signal K not reachable. callback is missing
             } else if ( response.statusCode != 200 ) {
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
-              // FIXME: cb(new Error(`invalid response ${response.statusCode}`), null)     // Chrashes when Signal K not reachable. callback is missing
+              cb(new Error(`invalid response ${response.statusCode}`), null)     // Crashes when Signal K not reachable. callback is missing
             } else {
-              // FIXME: cb(null, null)
+              cb(null, null)
             }
           })
 }
