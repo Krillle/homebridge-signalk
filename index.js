@@ -92,7 +92,8 @@ module.exports = function(homebridge) {
 // api may be null if launched from old homebridge version
 function SignalKPlatform(log, config, api) {
   log("SignalKPlatform Init");
-  log ("testversion")
+
+  if (!(config)) { log ("No configuration found."); exit; }
   if (!(config.host)) { log ("No host configuration found."); exit; }
 
   var platform = this;
