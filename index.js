@@ -526,7 +526,7 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
 
   accessory.getService(Service.Switch)
   .getCharacteristic(Characteristic.On)
-  .on('get', this.getOnOff.bind(this, dataPath))
+  .on('get', this.getOnOff.bind(this, dataPath); debug('ping'))
   .on('set', function(value, callback) {
     platform.log(`Set switch ${accessory.displayName}.state to ${value}`)
     platform.setOnOff(accessory.context.identifier, value, ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
