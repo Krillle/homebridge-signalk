@@ -1,5 +1,6 @@
 const _ = require('lodash');
-var debug = require('debug')('homebridge-signalk');
+var debug = require('debug')('homebridge-signalk:debug');
+var wslog = require('debug')('homebridge-signalk:websocket');
 var request = require('request');
 var http = require('http');
 var _url = require('url');
@@ -499,7 +500,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   .on('get', this.getRatio.bind(this, dataPath))
   .on('set', function(value, callback) {
     platform.log(`Set dimmer ${accessory.displayName}.dimmingLevel to ${value}%`)
-    platform.SetRatio(accessory.context.identifier, value, ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
+    platform.SetRatio(accessory.context.identifier, value, ()=> {platform.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
     callback();
   });
 
@@ -526,10 +527,10 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
 
   accessory.getService(Service.Switch)
   .getCharacteristic(Characteristic.On)
-  .on('get', ()=> {this.getOnOff.bind(this, dataPath); debug('On/off data path:', dataPath)})
+  .on('get', this.getOnOff.bind(this, dataPath))
   .on('set', function(value, callback) {
     platform.log(`Set switch ${accessory.displayName}.state to ${value}`)
-    platform.setOnOff(accessory.context.identifier, value, ()=> {console.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
+    platform.setOnOff(accessory.context.identifier, value, ()=> {platform.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
     callback();
   });
 
@@ -1010,7 +1011,7 @@ SignalKPlatform.prototype.noignoredPath = function(path) {
 // Reads value for path from Signal K API
 SignalKPlatform.prototype.getValue = function(path, cb, conversion) {
   var url = this.url + path.replace(/\./g, '/')
-  // this.log(`GET ${url}`)
+  debug(`Signal K GET ${url}`)
   let headers = {}
 
   if ( this.securityToken ) {
@@ -1021,17 +1022,16 @@ SignalKPlatform.prototype.getValue = function(path, cb, conversion) {
            headers: headers},
           (error, response, body) => {
             if ( error ) {
-//            this.log(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
+              debug(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
               cb(error, null)
             } else if ( response.statusCode == 404 ) {
-//              this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
+              debug(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error('device not present: 404'), null)  // removeAccessory relies on that error text
             } else if ( response.statusCode != 200 ) {
-//              this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
+              debug(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error(`invalid response ${response.statusCode}`), null)
             } else {
-// this.log(`GET ${url}`)
-// this.log(body, '>', conversion(body) );
+              debug('Success:', body, '>', conversion(body))
               cb(null, conversion(body))
             }
           })
@@ -1160,7 +1160,7 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
       targetList = platform.updateSubscriptions.get(valuePath)
       targetList.forEach(target => {
         target.characteristic.updateValue(target.conversion(valueValue));
-        debug('Updating value:',target.conversion)
+        wslog('Updating value:',target.conversion)
         if (valuePath.slice(0,empirBusIdentifier.length) == empirBusIdentifier) {
           platform.log('Updating value:', valuePath, '>', target.characteristic.displayName, '|', valueValue, '>', target.conversion(valueValue));
         }
