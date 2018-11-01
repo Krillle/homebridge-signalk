@@ -1,4 +1,5 @@
 const _ = require('lodash');
+var debug = require('debug')('homebridge-signalk');
 var request = require('request');
 var http = require('http');
 var _url = require('url');
@@ -1105,10 +1106,10 @@ SignalKPlatform.prototype.setValue = function(device, context, value, cb) {
           (error, response, body) => {
             if ( error ) {
               this.log(`response: ${JSON.stringify(response)} body: ${JSON.stringify(body)}`)
-              cb(error, null)     // Crashes when Signal K not reachable. callback is missing
+              cb(error, null)     // FIXME: Error is not used
             } else if ( response.statusCode != 200 ) {
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
-              cb(new Error(`invalid response ${response.statusCode}`), null)     // Crashes when Signal K not reachable. callback is missing
+              cb(new Error(`invalid response ${response.statusCode}`), null)     // FIXME: Error is not used
             } else {
               cb(null, null)
             }
@@ -1147,7 +1148,7 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
   });
 
   this.ws.on('message', function incoming(data) {
-    // platform.log(data); // --
+    // debug('Incoming:',data);
     message = JSON.parse(data)
 
     if ( _.hasIn(message, 'updates') ) {
@@ -1159,7 +1160,7 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
       targetList = platform.updateSubscriptions.get(valuePath)
       targetList.forEach(target => {
         target.characteristic.updateValue(target.conversion(valueValue));
-        // DEBUG: platform.log('Updating value:',target.conversion) // --
+        debug('Updating value:',target.conversion)
         if (valuePath.slice(0,empirBusIdentifier.length) == empirBusIdentifier) {
           platform.log('Updating value:', valuePath, '>', target.characteristic.displayName, '|', valueValue, '>', target.conversion(valueValue));
         }
