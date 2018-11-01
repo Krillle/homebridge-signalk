@@ -1011,7 +1011,7 @@ SignalKPlatform.prototype.noignoredPath = function(path) {
 // Reads value for path from Signal K API
 SignalKPlatform.prototype.getValue = function(path, cb, conversion) {
   var url = this.url + path.replace(/\./g, '/')
-  debug(`Signal K GET ${url}`)
+  debug(`SignalK GET ${url}`)
   let headers = {}
 
   if ( this.securityToken ) {
@@ -1111,6 +1111,7 @@ SignalKPlatform.prototype.setValue = function(device, context, value, cb) {
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error(`invalid response ${response.statusCode}`), null)     // FIXME: Error is not used
             } else {
+              debug('Success.')
               cb(null, null)
             }
           })
@@ -1160,7 +1161,7 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
       targetList = platform.updateSubscriptions.get(valuePath)
       targetList.forEach(target => {
         target.characteristic.updateValue(target.conversion(valueValue));
-        wslog('Updating value:',target.conversion)
+        wslog('Updating signalk value:',target.conversion)
         if (valuePath.slice(0,empirBusIdentifier.length) == empirBusIdentifier) {
           platform.log('Updating value:', valuePath, '>', target.characteristic.displayName, '|', valueValue, '>', target.conversion(valueValue));
         }
