@@ -1,6 +1,6 @@
 const _ = require('lodash');
-var debug = require('debug')('homebridge-signalk:debug');
-var wslog = require('debug')('homebridge-signalk:websocket');
+var httpLog = require('debug')('homebridge-signalk:http');
+var wsLog = require('debug')('homebridge-signalk:websocket');
 var request = require('request');
 var http = require('http');
 var _url = require('url');
@@ -1011,7 +1011,7 @@ SignalKPlatform.prototype.noignoredPath = function(path) {
 // Reads value for path from Signal K API
 SignalKPlatform.prototype.getValue = function(path, cb, conversion) {
   var url = this.url + path.replace(/\./g, '/')
-  debug(`SignalK GET ${url}`)
+  httpLog(`SignalK GET ${url}`)
   let headers = {}
 
   if ( this.securityToken ) {
@@ -1022,16 +1022,16 @@ SignalKPlatform.prototype.getValue = function(path, cb, conversion) {
            headers: headers},
           (error, response, body) => {
             if ( error ) {
-              debug(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
+              httpLog(`response: ${JSON.stringify(response)} body ${JSON.stringify(body)}`)
               cb(error, null)
             } else if ( response.statusCode == 404 ) {
-              debug(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
+              httpLog(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error('device not present: 404'), null)  // removeAccessory relies on that error text
             } else if ( response.statusCode != 200 ) {
-              debug(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
+              httpLog(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error(`invalid response ${response.statusCode}`), null)
             } else {
-              debug('Success:', body, '>', conversion(body))
+              httpLog('Success:', body, '>', conversion(body))
               cb(null, conversion(body))
             }
           })
@@ -1111,7 +1111,7 @@ SignalKPlatform.prototype.setValue = function(device, context, value, cb) {
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error(`invalid response ${response.statusCode}`), null)     // FIXME: Error is not used
             } else {
-              debug('Success.')
+              httpLog('Success.')
               cb(null, null)
             }
           })
@@ -1145,11 +1145,11 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
 
   this.ws.on('open', function open() {
     platform.ws.send(subscriptionMessage);
-    platform.log('Subscription message sent');
+    platform.log('Signal K WebSocket Subscription message sent');
   });
 
   this.ws.on('message', function incoming(data) {
-    // debug('Incoming:',data);
+    // wsLog('Signal K WebSocket incoming:', data);
     message = JSON.parse(data)
 
     if ( _.hasIn(message, 'updates') ) {
@@ -1161,13 +1161,13 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
       targetList = platform.updateSubscriptions.get(valuePath)
       targetList.forEach(target => {
         target.characteristic.updateValue(target.conversion(valueValue));
-        wslog('Updating signalk value:',target.conversion)
+        wsLog('Signal K WebSocket value recieved:', valuePath, valueValue, target.conversion)
         if (valuePath.slice(0,empirBusIdentifier.length) == empirBusIdentifier) {
           platform.log('Updating value:', valuePath, '>', target.characteristic.displayName, '|', valueValue, '>', target.conversion(valueValue));
         }
       })
     } else {
-      platform.log('Welcome message recieved');
+      platform.log('Signal K WebSocket welcome message recieved');
     }
 
   });

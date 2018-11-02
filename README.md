@@ -98,9 +98,9 @@ The plugin awaits and accepts the following settings in the Homebridge `config.j
 `"name" : "NameOfVessel"`  
 `"ssl": false` Set to `true` if Signal K server is awaiting connections via SSL  
 
-`"emptyBatteryVoltage" : "22.5"` Battery SOC shown as 0% (ignored if SOC is reported from battery itself)
+`"emptyBatteryVoltage" : "22.5"` Battery SOC shown as 0% (ignored if SOC is reported from battery itself)  
 `"lowBatteryVoltage" : "23.5"` Low battery warning if battery voltage is at or below  
-`"fullBatteryVoltage" : "26.5"` Battery SOC shown as 100% (ignored if SOC is reported from battery itself)
+`"fullBatteryVoltage" : "26.5"` Battery SOC shown as 100% (ignored if SOC is reported from battery itself)  
 `"chargingBatteryVoltage" : "27.5"`Battery shown as charging if battery voltage is at or above  
 `"lowFreshWaterLevel" : "25.0"` Low tank (battery) warning if tank level is at or below  
 `"highWasteWaterLevel" : "75.0"` Low battery warning if tank level is at or above  
@@ -116,3 +116,9 @@ The plugin awaits and accepts the following settings in the Homebridge `config.j
 `"ignoredPaths": ["key","key"]` List of API keys for which you don't want to have a device in HomeKit. Devices will be deleted from HomeKit if already present.  
 
 `"displayNames": ["key":"Display Name","key":"Display Name"]` List of API keys and reespective display names to use for them in HomeKit. Saves the effort to rename them in HomeKit manually. Spaces and Umlauts are allowed.  
+
+## Debugging
+To moinitor communication with Signal K start HomeBridge with DEBUG environment variable:    
+`DEBUG=* homebridge`  
+`DEBUG=homebridge-signalk:websocket` Signal K WebSocket messages  
+`DEBUG=homebridge-signalk:debug` homebridge-signalk activity  
