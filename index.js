@@ -1145,7 +1145,7 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
 
   this.ws.on('open', function open() {
     platform.ws.send(subscriptionMessage);
-    platform.log('Signal K WebSocket Subscription message sent');
+    platform.log('Signal K WebSocket subscription message sent');
   });
 
   this.ws.on('message', function incoming(data) {
@@ -1162,9 +1162,8 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
       targetList.forEach(target => {
         target.characteristic.updateValue(target.conversion(valueValue));
         wsLog('Signal K WebSocket value recieved:', valuePath, valueValue, target.conversion)
-        wsLog('empirBusIdentifier', valuePath.slice(0,empirBusIdentifier.length))
+        wsLog('Updating value:', valuePath, '>', target.characteristic.displayName, '|', valueValue, '>', target.conversion(valueValue));
         if (valuePath.slice(0,empirBusIdentifier.length) == empirBusIdentifier) {
-          platform.log('Updating value:', valuePath, '>', target.characteristic.displayName, '|', valueValue, '>', target.conversion(valueValue));
         }
       })
     } else {
