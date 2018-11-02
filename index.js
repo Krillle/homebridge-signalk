@@ -1162,6 +1162,7 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
       targetList.forEach(target => {
         target.characteristic.updateValue(target.conversion(valueValue));
         wsLog('Signal K WebSocket value recieved:', valuePath, valueValue, target.conversion)
+        wsLog('empirBusIdentifier', valuePath.slice(0,empirBusIdentifier.length)
         if (valuePath.slice(0,empirBusIdentifier.length) == empirBusIdentifier) {
           platform.log('Updating value:', valuePath, '>', target.characteristic.displayName, '|', valueValue, '>', target.conversion(valueValue));
         }
