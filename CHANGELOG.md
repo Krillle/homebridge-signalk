@@ -4,7 +4,7 @@
 - fix: crash when Venus GX meta data is missing
 - fix: batteries which don't report a state of charge (SOC) to Signal K are shown in Home App as "not responding"
 - feature: calculate SOC for batteries which don't report SOC to Signal K (simplified linear SOC based on voltage)
-- feature: logging for debug and Signal K websocket messages
+- feature: log Signal K API requests and WebSocket updates
 
 **Known issues:**
 - Venus GX meta data is not processed
@@ -14,4 +14,4 @@
 
  **Known issues:**
  - Batteries which don't report a state of charge (SOC) to Signal K are shown in Home App as "not responding"
- - Crash when Venus GX meta data is missung
+ - Crash when Venus GX meta data is missing

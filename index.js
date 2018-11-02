@@ -1141,11 +1141,11 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
   });
 
   var subscriptionMessage = `{"context": "vessels.self","subscribe":${JSON.stringify(subscriptionPaths)}}`
-  // platform.log(subscriptionMessage); // --
+  // wsLog(subscriptionMessage); // --
 
   this.ws.on('open', function open() {
     platform.ws.send(subscriptionMessage);
-    platform.log('Signal K WebSocket Subscription message sent');
+    platform.log('websocket Subscription message sent');
   });
 
   this.ws.on('message', function incoming(data) {
@@ -1160,11 +1160,11 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
 
       targetList = platform.updateSubscriptions.get(valuePath)
       targetList.forEach(target => {
-        wsLog('Signal K WebSocket Updating value:', valuePath, '>', target.characteristic.displayName, '|', valueValue, '>', target.conversion(valueValue), '|', target.conversion);
+        wsLog('Updating value:', valuePath, '>', target.characteristic.displayName, '|', valueValue, '>', target.conversion(valueValue), '|', target.conversion);
         target.characteristic.updateValue(target.conversion(valueValue));
       })
     } else {
-      platform.log('Signal K WebSocket Welcome message recieved');
+      platform.log('websocket Welcome message recieved');
     }
 
   });

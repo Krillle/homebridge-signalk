@@ -120,5 +120,5 @@ The plugin awaits and accepts the following settings in the Homebridge `config.j
 ## Debugging
 To moinitor communication with Signal K start HomeBridge with DEBUG environment variable:    
 `DEBUG=* homebridge`  
-`DEBUG=homebridge-signalk:websocket` Signal K WebSocket messages  
-`DEBUG=homebridge-signalk:debug` homebridge-signalk activity  
+`DEBUG=homebridge-signalk:http` Signal K API requests  
+`DEBUG=homebridge-signalk:websocket` Signal K WebSocket updates  
