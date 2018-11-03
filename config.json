@@ -23,7 +23,7 @@
       "emptyBatteryVoltage" : "22.5",
       "lowBatteryVoltage" : "23.5",
       "fullBatteryVoltage" : "26.5",
-      "chargingBatteryVoltage" : "27.5",
+      "chargingBatteryVoltage" : "27.0",
       "lowFreshWaterLevel" : "25.0",
       "highWasteWaterLevel" : "75.0",
       "highBlackWaterLevel" : "75.0",

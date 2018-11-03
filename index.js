@@ -57,13 +57,12 @@ const defaultLowLiveWellLevel = 50.0
 const defaultLowGasLevel = 50.0
 const defaultLowBallastLevel = 50.0
 
-// Batteries and chargers
+// Batteries
 const batteriesPath = 'electrical.batteries'
-const inverterChargerPath = 'electrical.inverterCharger'
 const defaultEmptyBatteryVoltage = 22
 const defaultLowBatteryVoltage = 23
 const defaultFullBatteryVoltage = 26
-const defaultChargingBatteryVoltage = 27.5
+const defaultChargingBatteryVoltage = 27
 
 // Engine data
 const enginePath = 'propulsion'
@@ -421,7 +420,7 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
       newAccessory.addService(Service.BatteryService, accessoryName) // Used for low tank level warning
       this.addTankServices(newAccessory);
       break;
-    case 'battery' || 'charger':
+    case 'battery':
       newAccessory.addService(Service.HumiditySensor, accessoryName) // Used as main accessory
       newAccessory.addService(Service.BatteryService, accessoryName)
       this.addVoltageBatteryServices(newAccessory);
@@ -922,9 +921,9 @@ SignalKPlatform.prototype.processFullTree = function(body) {
               && !this.accessories.has(path) ) {
 
           var displayName = _.get(instance, "meta.displayName") || this.getName(path, tankType);
-          var deviceType = 'tank'; //
-          var manufacturer = "NMEA"; // chargers[instance].manufacturer.name.value || "NMEA";
-          var model = tankType; // chargers[instance].manufacturer.model.value || "Charger";
+          var deviceType = 'tank';
+          var manufacturer = "NMEA";
+          var model = tankType;
           var deviceKey = `${tankType}.${instance}`
 
           this.addAccessory(displayName, deviceKey, path, manufacturer, model, deviceKey, tanksPath, deviceType);
@@ -934,7 +933,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
   }
   this.log('Done');
 
-  // Add batteries and chargers
+  // Add batteries
   this.log("Adding batteries");
   var batteries = _.get(tree, batteriesPath);
   if ( batteries ) {
@@ -955,24 +954,24 @@ SignalKPlatform.prototype.processFullTree = function(body) {
   }
   this.log('Done');
 
-  this.log("Adding chargers");
-  var chargers = _.get(tree, inverterChargerPath);
-  if ( chargers ) {
-    _.keys(chargers).forEach(instance => {
-      var path = `${inverterChargerPath}.${instance}`;
-      if (this.noignoredPath(path)
-            && !this.accessories.has(path) ) {
-
-        var displayName = this.getName(path, `Charger ${instance}`);
-        var devicetype = 'charger';
-        var manufacturer = "NMEA"; // chargers[instance].manufacturer.name.value || "NMEA";
-        var model = "Charger"; // chargers[instance].manufacturer.model.value || "Charger";
-
-        this.addAccessory(displayName, instance, path, manufacturer, model, displayName, inverterChargerPath, devicetype);
-      }
-    });
-  }
-  this.log('Done');
+  // this.log("Adding chargers");
+  // var chargers = _.get(tree, inverterChargerPath);
+  // if ( chargers ) {
+  //   _.keys(chargers).forEach(instance => {
+  //     var path = `${inverterChargerPath}.${instance}`;
+  //     if (this.noignoredPath(path)
+  //           && !this.accessories.has(path) ) {
+  //
+  //       var displayName = this.getName(path, `Charger ${instance}`);
+  //       var devicetype = 'charger';
+  //       var manufacturer = "NMEA"; // chargers[instance].manufacturer.name.value || "NMEA";
+  //       var model = "Charger"; // chargers[instance].manufacturer.model.value || "Charger";
+  //
+  //       this.addAccessory(displayName, instance, path, manufacturer, model, displayName, inverterChargerPath, devicetype);
+  //     }
+  //   });
+  // }
+  // this.log('Done');
 
   // Add engine data
   this.log("Adding engine data");

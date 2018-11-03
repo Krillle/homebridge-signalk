@@ -49,7 +49,6 @@ HomeKit does not support tank sensors yet, so a humidity sensor is the best matc
 The following Signal K standard keys for batteries and chargers are mapped to humidity sensors:
 
 /electrical/batteries/\*  
-/electrical/inverterCharger/\*  
 
 HomeKit does not support batteries as stand alone devices yet, so a humidity sensor is the best matching device showing percentages representing the state of charge. Batteries on low level show a low battery warning.
 
