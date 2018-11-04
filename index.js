@@ -986,21 +986,6 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         }
       });
 
-
-
-
-
-
-      if (this.noignoredPath(path)
-            && !this.accessories.has(path) ) {
-
-        var displayName = this.getName(path, `Charger ${instance}`);
-        var devicetype = 'charger';
-        var manufacturer = "NMEA"; // chargers[instance].manufacturer.name.value || "NMEA";
-        var model = "Charger"; // chargers[instance].manufacturer.model.value || "Charger";
-
-        this.addAccessory(displayName, instance, path, manufacturer, model, displayName, inverterChargerPath, devicetype);
-      }
     });
   }
   this.log('Done');
