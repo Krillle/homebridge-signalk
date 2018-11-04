@@ -968,7 +968,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
   var chargers = _.get(tree, chargersPath);
   if ( chargers ) {
     _.keys(chargers).forEach(instance => {
-      var chargersInstancePath = `${inverterChargerPath}.${instance}`;
+      var chargersInstancePath = `${chargersPath}.${instance}`;
 
       chargersDevices.forEach(device => {
         var path = `${chargerInstancePath}.${device.key}`;
