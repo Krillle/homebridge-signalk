@@ -4,6 +4,12 @@
   "description": "Signal K plugin for homebridge: https://github.com/Krillle/homebridge-signalk",
   "license": "ISC",
   "author": "Christian Wegerhoff <christian.wegerhoff@icloud.com>",
+  "contributors": [
+    {
+      "name": "Scott Bender",
+      "email": "scott@scottbender.net"
+    }
+  ],
   "keywords": [
     "homebridge-plugin",
     "signalk",
@@ -26,7 +32,7 @@
     "homebridge": ">=0.2.0"
   },
   "dependencies": {
-    "debug": "^0.0.0",
+    "debug": "^4.0.0",
     "http": "^0.0.0",
     "lodash": "^4.17.4",
     "request": "^2.88.0",
