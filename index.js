@@ -11,7 +11,7 @@ var Accessory, Service, Characteristic, UUIDGen;
 const urlPath = 'signalk/v1/api/vessels/self/'
 const wsPath = 'signalk/v1/stream?subscribe=none' // none will stream only the heartbeat, until the client issues subscribe messages in the WebSocket stream
 
-// EmpirBus NXT + Venus GX
+// EmpirBus NXT + Venus GX switches and dimmer
 //
 // Key path according to EmpirBus Application Specific PGN Data Model 2 (2x word + 8x bit) per instance:
 // 2x dimmer values 0 = off .. 1000 = 100%, 8x switch values 0 = off / 1 = on
@@ -20,9 +20,18 @@ const wsPath = 'signalk/v1/stream?subscribe=none' // none will stream only the h
 // electrical.switches.empirBusNxt-instance<NXT component instance 0..49>-dimmer<#1..2>.state
 const controlsPath = 'electrical.switches'
 const empirBusIdentifier = 'empirBusNxt'
+const venusRelaisIdentifier = 'venus'
 const controlsPutPath = 'electrical/switches/'
 
-const venusRelaisIdentifier = 'venus'
+const switchOnValues = { 'true', ' on', 'low power', 'passthrough' } // All Signal K values which represent a switch is "on"
+
+// Victron Venus GX Chargers
+const chargersPath = 'electrical.chargers'
+const chargersDevices = [
+  { key : 'mode' , displayName : 'Charger Mode' , deviceType : 'switch'},
+  { key : 'capacity.stateOfCharge' , displayName : 'Charger SOC' , deviceType : 'batterySOC'}
+];
+
 
 // Environment temperatures + humidity
 const environmentPath = 'environment'
@@ -954,24 +963,47 @@ SignalKPlatform.prototype.processFullTree = function(body) {
   }
   this.log('Done');
 
-  // this.log("Adding chargers");
-  // var chargers = _.get(tree, inverterChargerPath);
-  // if ( chargers ) {
-  //   _.keys(chargers).forEach(instance => {
-  //     var path = `${inverterChargerPath}.${instance}`;
-  //     if (this.noignoredPath(path)
-  //           && !this.accessories.has(path) ) {
-  //
-  //       var displayName = this.getName(path, `Charger ${instance}`);
-  //       var devicetype = 'charger';
-  //       var manufacturer = "NMEA"; // chargers[instance].manufacturer.name.value || "NMEA";
-  //       var model = "Charger"; // chargers[instance].manufacturer.model.value || "Charger";
-  //
-  //       this.addAccessory(displayName, instance, path, manufacturer, model, displayName, inverterChargerPath, devicetype);
-  //     }
-  //   });
-  // }
-  // this.log('Done');
+  // Add chargers
+  this.log("Adding chargers");
+  var chargers = _.get(tree, chargersPath);
+  if ( chargers ) {
+    _.keys(chargers).forEach(instance => {
+      var chargersInstancePath = `${inverterChargerPath}.${instance}`;
+
+      chargersDevices.forEach(device => {
+        var path = `${chargerInstancePath}.${device.key}`;
+        var chargerDevice = _.get(tree, path);
+        if ( chargerDevice
+              && this.noignoredPath(path)
+              && !this.accessories.has(path) ) {
+
+          var displayName = this.getName(path, device.displayName);
+          var devicetype = device.devicetype;
+          var manufacturer = 'Victron';
+          var model = device.displayName;
+
+          this.addAccessory(displayName, device.key, path, manufacturer, model, displayName, environmentPath, devicetype);
+        }
+      });
+
+
+
+
+
+
+      if (this.noignoredPath(path)
+            && !this.accessories.has(path) ) {
+
+        var displayName = this.getName(path, `Charger ${instance}`);
+        var devicetype = 'charger';
+        var manufacturer = "NMEA"; // chargers[instance].manufacturer.name.value || "NMEA";
+        var model = "Charger"; // chargers[instance].manufacturer.model.value || "Charger";
+
+        this.addAccessory(displayName, instance, path, manufacturer, model, displayName, inverterChargerPath, devicetype);
+      }
+    });
+  }
+  this.log('Done');
 
   // Add engine data
   this.log("Adding engine data");
@@ -1051,7 +1083,13 @@ SignalKPlatform.prototype.getRatio = function(path, callback) {
 // Returns the state of path as boolean
 SignalKPlatform.prototype.getOnOff = function(path, callback) {
   this.getValue(path + '.value', callback,
-                (body) => (body == 'true') )
+                (body) => (switchOnValues.has(body))
+}
+
+// Returns the state of path as boolean
+SignalKPlatform.prototype.getChargerOn = function(path, callback) {
+  this.getValue(path + '.value', callback,
+                (body) => (body <> 'off') )
 }
 
 // Returns temperature in °C

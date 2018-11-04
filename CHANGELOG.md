@@ -1,7 +1,8 @@
 ## Change Log
 
 ### current version
-- fix: 
+- feature: Charger Mode (/electrical.chargers.<#>.mode) is supported
+- feature: Charger State of Charge is supported (/electrical.chargers.<#>.capacity.stateOfCharge')
 
 **Known issues:**
 - Venus GX meta data is not processed
