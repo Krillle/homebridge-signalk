@@ -28,8 +28,8 @@ const switchOnValues = [ 'true', ' on', 'low power', 'passthrough' ] // All Sign
 // Victron Venus GX Chargers
 const chargersPath = 'electrical.chargers'
 const chargersDevices = [
-  { key : 'mode' , displayName : 'Charger Mode' , deviceType : 'switch'},
-  { key : 'capacity.stateOfCharge' , displayName : 'Charger SOC' , deviceType : 'batterySOC'}
+  { key : 'mode' , displayName : 'Charger Mode' , devicetype : 'switch'},
+  { key : 'capacity.stateOfCharge' , displayName : 'Charger SOC' , devicetype : 'batterySOC'}
 ];
 
 
