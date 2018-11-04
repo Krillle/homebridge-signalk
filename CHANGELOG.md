@@ -1,5 +1,11 @@
 ## Change Log
 
+### v0.0.3 (2018/11/04 18:43)
+- fix: declaration of dependency was missing
+
+**Known issues:**
+- Venus GX meta data is not processed
+
 ### v0.0.2 (2018/11/02 16:00)
 - fix: crash when Venus GX meta data is missing
 - fix: batteries which don't report a state of charge (SOC) to Signal K are shown in Home App as "not responding"
