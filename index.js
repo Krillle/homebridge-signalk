@@ -23,7 +23,7 @@ const empirBusIdentifier = 'empirBusNxt'
 const venusRelaisIdentifier = 'venus'
 const controlsPutPath = 'electrical/switches/'
 
-const switchOnValues = [ 'true', ' on', 'low power', 'passthrough' ] // All Signal K values which represent a switch is "on"
+const switchOnValues = new Map( 'true', ' on', 'low power', 'passthrough' ) // All Signal K values which represent a switch is "on"
 
 // Victron Venus GX Chargers
 const chargersPath = 'electrical.chargers'
@@ -1083,13 +1083,7 @@ SignalKPlatform.prototype.getRatio = function(path, callback) {
 // Returns the state of path as boolean
 SignalKPlatform.prototype.getOnOff = function(path, callback) {
   this.getValue(path + '.value', callback,
-                (body) => (switchOnValues.has(body))
-}
-
-// Returns the state of path as boolean
-SignalKPlatform.prototype.getChargerOn = function(path, callback) {
-  this.getValue(path + '.value', callback,
-                (body) => (body <> 'off') )
+                (body) => (switchOnValues.has(body) )
 }
 
 // Returns temperature in °C
