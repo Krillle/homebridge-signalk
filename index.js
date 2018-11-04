@@ -968,7 +968,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
   var chargers = _.get(tree, chargersPath);
   if ( chargers ) {
     _.keys(chargers).forEach(instance => {
-      var chargersInstancePath = `${chargersPath}.${instance}`;
+      var chargerInstancePath = `${chargersPath}.${instance}`;
 
       chargersDevices.forEach(device => {
         var path = `${chargerInstancePath}.${device.key}`;
@@ -982,7 +982,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
           var manufacturer = 'Victron';
           var model = device.displayName;
 
-          this.addAccessory(displayName, device.key, path, manufacturer, model, displayName, environmentPath, devicetype);
+          this.addAccessory(displayName, device.key, path, manufacturer, model, displayName, chargerInstancePath, devicetype);
         }
       });
 
