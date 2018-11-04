@@ -23,7 +23,7 @@ const empirBusIdentifier = 'empirBusNxt'
 const venusRelaisIdentifier = 'venus'
 const controlsPutPath = 'electrical/switches/'
 
-const switchOnValues = { 'true', ' on', 'low power', 'passthrough' } // All Signal K values which represent a switch is "on"
+const switchOnValues = [ 'true', ' on', 'low power', 'passthrough' ] // All Signal K values which represent a switch is "on"
 
 // Victron Venus GX Chargers
 const chargersPath = 'electrical.chargers'
