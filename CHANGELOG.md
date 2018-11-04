@@ -1,5 +1,11 @@
 ## Change Log
 
+### current version
+- fix: 
+
+**Known issues:**
+- Venus GX meta data is not processed
+
 ### v0.0.3 (2018/11/04 18:43)
 - fix: declaration of dependency was missing
 
