@@ -3,8 +3,16 @@
   "version": "0.0.3",
   "description": "Signal K plugin for homebridge: https://github.com/Krillle/homebridge-signalk",
   "license": "ISC",
+  "author": "Christian Wegerhoff <christian.wegerhoff@icloud.com>",
   "keywords": [
-    "homebridge-plugin"
+    "homebridge-plugin",
+    "signalk",
+    "empirbus",
+    "empirbusnxt"
+    "victron",
+    "venus",
+    "boat",
+    "marine"
   ],
   "repository": {
     "type": "git",
@@ -18,7 +26,7 @@
     "homebridge": ">=0.2.0"
   },
   "dependencies": {
-    "debug": "^5.6.0",
+    "debug": "^0.0.0",
     "http": "^0.0.0",
     "lodash": "^4.17.4",
     "request": "^2.88.0",
