@@ -933,7 +933,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
           var deviceType = 'tank';
           var manufacturer = "NMEA";
           var model = tankType;
-          var deviceKey = `${tankType}.${instance}`
+          var deviceKey = `${tankType}.${instance}`;
 
           this.addAccessory(displayName, deviceKey, path, manufacturer, model, deviceKey, tanksPath, deviceType);
         }
@@ -956,8 +956,9 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         var devicetype = batteries[instance].capacity ? 'batterySOC' : 'battery';
         var manufacturer = "NMEA"; // FIXME: batteries[instance].manufacturer.name.value || "NMEA";
         var model = batteries[instance].capacity ? 'Battery SOC' : 'Battery'; // FIXME: batteries[instance].manufacturer.model.value || "Battery";
+        var deviceKey = `batteries.${instance}`;
 
-        this.addAccessory(displayName, instance, path, manufacturer, model, displayName, batteriesPath, devicetype);
+        this.addAccessory(displayName, deviceKey, path, manufacturer, model, displayName, batteriesPath, devicetype);
       }
     });
   }
@@ -981,8 +982,10 @@ SignalKPlatform.prototype.processFullTree = function(body) {
           var devicetype = device.devicetype;
           var manufacturer = 'Victron';
           var model = device.displayName;
+          var deviceKey = `chargers.${instance}`;
 
-          this.addAccessory(displayName, device.key, path, manufacturer, model, displayName, chargerInstancePath, devicetype);
+          // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, devicetype)
+          this.addAccessory(displayName, deviceKey, chargerInstancePath, manufacturer, model, displayName, chargersPath, devicetype);
         }
       });
 
@@ -1004,7 +1007,8 @@ SignalKPlatform.prototype.processFullTree = function(body) {
       var manufacturer = 'NMEA';
       var model = `${device.displayName} Sensor`;
 
-      this.addAccessory(displayName, device.key, path, manufacturer, model, displayName, environmentPath, devicetype);
+      // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, devicetype)
+      this.addAccessory(displayName, device.key, path, manufacturer, model, displayName, enginePath, devicetype);
     }
   });
   this.log('Done');
