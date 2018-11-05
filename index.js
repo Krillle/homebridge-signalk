@@ -384,7 +384,7 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
   var platform = this;
   var uuid = UUIDGen.generate(path);
 
-  this.log(`Add Accessory ${accessoryName}: ${path}, ${deviceType}`);
+  this.log(`Add Accessory: ${accessoryName}, ${path}, ${deviceType}`);
 
   var newAccessory = new Accessory(accessoryName, uuid);
 
@@ -881,7 +881,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
             && this.noignoredPath(`${controlsPath}.${device}`)
             && !this.accessories.has(`${controlsPath}.${device}`) ) {
 
-        this.log(`Preparing Venus GX device ${device} ${JSON.stringify(controls[device])}`);
+        httpLog(`Preparing Venus GX device: ${device} ${JSON.stringify(controls[device])}`);
         var path = `${controlsPath}.${device}`;
         var fallbackName = device; // FIXME: catch error in case of missing Metadata: controls[device].meta.displayName ? (controls[device].meta.displayName.value ? controls[device].meta.displayName.value : controls[device].meta.displayName) : controls[device].name.value;
         var displayName = this.getName(path, fallbackName);
@@ -951,7 +951,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
       if (this.noignoredPath(path)
             && !this.accessories.has(path) ) {
 
-        this.log(`Preparing battery device ${JSON.stringify(batteries[instance])}`);
+        httpLog(`Preparing battery device: ${JSON.stringify(batteries[instance])}`);
         var displayName = this.getName(path, `Battery ${instance}`);
         var deviceType = batteries[instance].capacity ? 'batterySOC' : 'battery';
         var manufacturer = "NMEA"; // FIXME: batteries[instance].manufacturer.name.value || "NMEA";
@@ -978,6 +978,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
               && this.noignoredPath(path)
               && !this.accessories.has(path) ) {
 
+          httpLog(`Preparing charger device: ${JSON.stringify(chargers[instance])}`);
           var displayName = this.getName(path, device.displayName);
           var deviceType = device.deviceType;
           var manufacturer = 'Victron';

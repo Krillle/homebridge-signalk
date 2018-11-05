@@ -4,6 +4,8 @@
 - feature: Charger Mode (/electrical.chargers.<#>.mode) is supported
 - feature: Charger State of Charge is supported (/electrical.chargers.<#>.capacity.stateOfCharge')
 
+- fix: Cleanup HomeKit device meta data for new devices. Should not have side effects on existing devices.
+
 **Known issues:**
 - Venus GX meta data is not processed
 
