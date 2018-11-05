@@ -28,31 +28,31 @@ const switchOnValues = [ 'true', ' on', 'low power', 'passthrough' ] // All Sign
 // Victron Venus GX Chargers
 const chargersPath = 'electrical.chargers'
 const chargersDevices = [
-  { key : 'mode' , displayName : 'Charger Mode' , devicetype : 'switch'},
-  { key : 'capacity.stateOfCharge' , displayName : 'Charger SOC' , devicetype : 'batterySOC'}
+  { key : 'mode' , displayName : 'Charger Mode' , deviceType : 'switch'},
+  { key : 'capacity.stateOfCharge' , displayName : 'Charger SOC' , deviceType : 'batterySOC'}
 ];
 
 
 // Environment temperatures + humidity
 const environmentPath = 'environment'
 const environments = [
-  { key : 'outside.temperature' , displayName : 'Outside' , devicetype : 'temperature'},
-  { key : 'inside.temperature' , displayName : 'Inside' , devicetype : 'temperature'},
-  { key : 'inside.engineRoom.temperature' , displayName : 'Engine Room' , devicetype : 'temperature'},
-  { key : 'inside.mainCabin.temperature' , displayName : 'Main Cabin' , devicetype : 'temperature'},
-  { key : 'inside.refrigerator.temperature' , displayName : 'Refrigerator' , devicetype : 'temperature'},
-  { key : 'inside.freezer.temperature' , displayName : 'Freezer' , devicetype : 'temperature'},
-  { key : 'inside.heating.temperature' , displayName : 'Heating' , devicetype : 'temperature'},
-  { key : 'water.temperature' , displayName : 'Water' , devicetype : 'temperature'},
-  { key : 'cpu.temperature' , displayName : 'Raspberry Pi' , devicetype : 'temperature'},
+  { key : 'outside.temperature' , displayName : 'Outside' , deviceType : 'temperature'},
+  { key : 'inside.temperature' , displayName : 'Inside' , deviceType : 'temperature'},
+  { key : 'inside.engineRoom.temperature' , displayName : 'Engine Room' , deviceType : 'temperature'},
+  { key : 'inside.mainCabin.temperature' , displayName : 'Main Cabin' , deviceType : 'temperature'},
+  { key : 'inside.refrigerator.temperature' , displayName : 'Refrigerator' , deviceType : 'temperature'},
+  { key : 'inside.freezer.temperature' , displayName : 'Freezer' , deviceType : 'temperature'},
+  { key : 'inside.heating.temperature' , displayName : 'Heating' , deviceType : 'temperature'},
+  { key : 'water.temperature' , displayName : 'Water' , deviceType : 'temperature'},
+  { key : 'cpu.temperature' , displayName : 'Raspberry Pi' , deviceType : 'temperature'},
 
-  { key : 'outside.humidity' , displayName : 'Outside' , devicetype : 'humidity'},
-  { key : 'inside.humidity' , displayName : 'Inside' , devicetype : 'humidity'},
-  { key : 'inside.engineRoom.relativeHumidity' , displayName : 'Engine Room' , devicetype : 'humidity'},
-  { key : 'inside.mainCabin.relativeHumidity' , displayName : 'Main Cabin' , devicetype : 'humidity'},
-  { key : 'inside.refrigerator.relativeHumidity' , displayName : 'Refrigerator' , devicetype : 'humidity'},
-  { key : 'inside.freezer.relativeHumidity' , displayName : 'Freezer' , devicetype : 'humidity'},
-  { key : 'inside.heating.relativeHumidity' , displayName : 'Heating' , devicetype : 'humidity'}
+  { key : 'outside.humidity' , displayName : 'Outside' , deviceType : 'humidity'},
+  { key : 'inside.humidity' , displayName : 'Inside' , deviceType : 'humidity'},
+  { key : 'inside.engineRoom.relativeHumidity' , displayName : 'Engine Room' , deviceType : 'humidity'},
+  { key : 'inside.mainCabin.relativeHumidity' , displayName : 'Main Cabin' , deviceType : 'humidity'},
+  { key : 'inside.refrigerator.relativeHumidity' , displayName : 'Refrigerator' , deviceType : 'humidity'},
+  { key : 'inside.freezer.relativeHumidity' , displayName : 'Freezer' , deviceType : 'humidity'},
+  { key : 'inside.heating.relativeHumidity' , displayName : 'Heating' , deviceType : 'humidity'}
 ];
 
 // Tanks
@@ -76,8 +76,8 @@ const defaultChargingBatteryVoltage = 27
 // Engine data
 const enginePath = 'propulsion'
 const engines = [
-  { key : 'port.temperature' , displayName : 'Engine port' , devicetype : 'temperature'},
-  { key : 'starboard.temperature' , displayName : 'Engine starboard' , devicetype : 'temperature'}
+  { key : 'port.temperature' , displayName : 'Engine port' , deviceType : 'temperature'},
+  { key : 'starboard.temperature' , displayName : 'Engine starboard' , deviceType : 'temperature'}
 ];
 
 
@@ -238,7 +238,7 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
   // FIXME: Ignored paths are added anyway
   // FIXME: Results in crash ws updates when ignored or unreachable device is deleted afterwards
   // Add Device Services
-  switch(accessory.context.devicetype) {
+  switch(accessory.context.deviceType) {
     case 'switch':
       this.addSwitchServices(accessory);
       break;
@@ -380,11 +380,11 @@ SignalKPlatform.prototype.configurationRequestHandler = function(context, reques
 
 
 // Add accessory
-SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, devicetype) {
+SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType) {
   var platform = this;
   var uuid = UUIDGen.generate(path);
 
-  this.log(`Add Accessory ${accessoryName}: ${path}, ${devicetype}`);
+  this.log(`Add Accessory ${accessoryName}: ${path}, ${deviceType}`);
 
   var newAccessory = new Accessory(accessoryName, uuid);
 
@@ -392,7 +392,7 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
   newAccessory.context.identifier = identifier
   newAccessory.context.path = path
   newAccessory.context.categoryPath = categoryPath
-  newAccessory.context.devicetype = devicetype
+  newAccessory.context.deviceType = deviceType
   newAccessory.context.manufacturer = manufacturer
   newAccessory.context.model = model  // Tank Warning relies on model as tank type
   newAccessory.context.serialnumber = serialnumber
@@ -406,7 +406,7 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
     .setCharacteristic(Characteristic.SerialNumber, serialnumber);
 
   // Add Device Services
-  switch(devicetype) {
+  switch(deviceType) {
     case 'switch':
       newAccessory.addService(Service.Switch, accessoryName)
       this.addSwitchServices(newAccessory);
@@ -871,11 +871,11 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         var path = `${controlsPath}.${device}`;
         var fallbackName = controls[device].meta.displayName ? controls[device].meta.displayName.value : controls[device].name.value;
         var displayName = this.getName(path, fallbackName);
-        var devicetype = controls[device].type.value;
+        var deviceType = controls[device].type.value;
         var manufacturer = controls[device].meta.manufacturer.name.value || "EmpirBus";
         var model = controls[device].meta.manufacturer.model.value || "NXT DCM";
 
-        this.addAccessory(displayName, device, path, manufacturer, model, controls[device].name.value, controlsPath, devicetype);
+        this.addAccessory(displayName, device, path, manufacturer, model, controls[device].name.value, controlsPath, deviceType);
       } else
       if (device.slice(0,venusRelaisIdentifier.length) == venusRelaisIdentifier
             && this.noignoredPath(`${controlsPath}.${device}`)
@@ -885,7 +885,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         var path = `${controlsPath}.${device}`;
         var fallbackName = device; // FIXME: catch error in case of missing Metadata: controls[device].meta.displayName ? (controls[device].meta.displayName.value ? controls[device].meta.displayName.value : controls[device].meta.displayName) : controls[device].name.value;
         var displayName = this.getName(path, fallbackName);
-        var devicetype = "switch";
+        var deviceType = "switch";
         var manufacturer = "Victron Energy"; // FIXME: catch error in case of missing Metadata: _.get(controls[device], "meta.manufacturer.name.value") || "Victron Energy";
         var model = "Venus GX"; // FIXME: catch error in case of missing Metadata: _.get(controls[device], "meta.manufacturer.model.value") || "Venus GX";
 
@@ -894,7 +894,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
           fallbackName = parts[parts.length-1]
         }
 
-        this.addAccessory(displayName, device, path, manufacturer, model, device, controlsPath, devicetype);
+        this.addAccessory(displayName, device, path, manufacturer, model, device, controlsPath, deviceType);
       }
     });
   }
@@ -910,11 +910,11 @@ SignalKPlatform.prototype.processFullTree = function(body) {
           && !this.accessories.has(path) ) {
 
       var displayName = this.getName(path, device.displayName);
-      var devicetype = device.devicetype;
+      var deviceType = device.deviceType;
       var manufacturer = 'NMEA';
       var model = `${device.displayName} Sensor`;
 
-      this.addAccessory(displayName, device.key, path, manufacturer, model, displayName, environmentPath, devicetype);
+      this.addAccessory(displayName, device.key, path, manufacturer, model, displayName, environmentPath, deviceType);
     }
   });
   this.log('Done');
@@ -953,12 +953,12 @@ SignalKPlatform.prototype.processFullTree = function(body) {
 
         this.log(`Preparing battery device ${JSON.stringify(batteries[instance])}`);
         var displayName = this.getName(path, `Battery ${instance}`);
-        var devicetype = batteries[instance].capacity ? 'batterySOC' : 'battery';
+        var deviceType = batteries[instance].capacity ? 'batterySOC' : 'battery';
         var manufacturer = "NMEA"; // FIXME: batteries[instance].manufacturer.name.value || "NMEA";
         var model = batteries[instance].capacity ? 'Battery SOC' : 'Battery'; // FIXME: batteries[instance].manufacturer.model.value || "Battery";
         var deviceKey = `batteries.${instance}`;
 
-        this.addAccessory(displayName, deviceKey, path, manufacturer, model, displayName, batteriesPath, devicetype);
+        this.addAccessory(displayName, deviceKey, path, manufacturer, model, displayName, batteriesPath, deviceType);
       }
     });
   }
@@ -979,13 +979,13 @@ SignalKPlatform.prototype.processFullTree = function(body) {
               && !this.accessories.has(path) ) {
 
           var displayName = this.getName(path, device.displayName);
-          var devicetype = device.devicetype;
+          var deviceType = device.deviceType;
           var manufacturer = 'Victron';
           var model = device.displayName;
           var deviceKey = `chargers.${instance}`;
 
-          // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, devicetype)
-          this.addAccessory(displayName, deviceKey, chargerInstancePath, manufacturer, model, displayName, chargersPath, devicetype);
+          // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
+          this.addAccessory(displayName, deviceKey, chargerInstancePath, manufacturer, model, displayName, chargersPath, deviceType);
         }
       });
 
@@ -1003,12 +1003,12 @@ SignalKPlatform.prototype.processFullTree = function(body) {
           && !this.accessories.has(path) ) {
 
       var displayName = this.getName(path, device.displayName);
-      var devicetype = device.devicetype;
+      var deviceType = device.deviceType;
       var manufacturer = 'NMEA';
       var model = `${device.displayName} Sensor`;
 
-      // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, devicetype)
-      this.addAccessory(displayName, device.key, path, manufacturer, model, displayName, enginePath, devicetype);
+      // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
+      this.addAccessory(displayName, device.key, path, manufacturer, model, displayName, enginePath, deviceType);
     }
   });
   this.log('Done');
