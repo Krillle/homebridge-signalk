@@ -979,7 +979,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
               && !this.accessories.has(path) ) {
 
           // httpLog(`Preparing charger device: ${JSON.stringify(chargers[instance])}`);
-          httpLog('Preparing charger device: \n %O', chargers[instance]);
+          httpLog('Preparing charger device: %o', chargers[instance]);
           var displayName = this.getName(path, device.displayName);
           var deviceType = device.deviceType;
           var manufacturer = 'Victron';
@@ -987,7 +987,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
           var deviceKey = `chargers.${instance}.${deviceType}`;
 
           // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
-          httpLog(`Adding Charger device: \n accessoryName: ${displayName} \n identifier: ${deviceKey} \n path: ${chargerInstancePath} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${displayName} \n categoryPath: ${chargersPath} \n deviceType: ${deviceType}`);
+          httpLog(`Adding Charger device: \n accessoryName: ${displayName}, identifier: ${deviceKey}, path: ${chargerInstancePath} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${displayName} \n categoryPath: ${chargersPath}, deviceType: ${deviceType}`);
           this.addAccessory(displayName, deviceKey, chargerInstancePath, manufacturer, model, displayName, chargersPath, deviceType);
         }
       });
