@@ -986,7 +986,8 @@ SignalKPlatform.prototype.processFullTree = function(body) {
           var deviceKey = `chargers.${instance}.${deviceType}`;
 
           // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
-          // this.addAccessory(displayName, deviceKey, chargerInstancePath, manufacturer, model, displayName, chargersPath, deviceType);
+          httpLog(`Adding Charger device: \n accessoryName: ${displayName} \n identifier: ${deviceKey} \n path: ${chargerInstancePath} \n manufacturer: ${manufacturer} \n model: ${model} \n serialnumber: ${displayName} \n categoryPath: ${chargersPath} deviceType: ${deviceType}`);
+          this.addAccessory(displayName, deviceKey, chargerInstancePath, manufacturer, model, displayName, chargersPath, deviceType);
         }
       });
 

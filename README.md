@@ -115,7 +115,7 @@ The plugin awaits and accepts the following settings in the Homebridge `config.j
 
 `"ignoredPaths": ["key","key"]` List of API keys for which you don't want to have a device in HomeKit. Devices will be deleted from HomeKit if already present.  
 
-`"displayNames": {"key":"Display Name","key":"Display Name"}` List of API keys and reespective display names to use for them in HomeKit. Saves the effort to rename them in HomeKit manually. Spaces and Umlauts are allowed.  
+`"displayNames": {"key":"Display Name","key":"Display Name"}` List of API keys and respective display names to display for them in HomeKit. Saves the effort to rename devices in HomeKit manually. Spaces and Umlauts are allowed.  
 
 ## Debugging
 To monitor communication with Signal K start HomeBridge with DEBUG environment variable:    
