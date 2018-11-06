@@ -382,7 +382,7 @@ SignalKPlatform.prototype.configurationRequestHandler = function(context, reques
 // Add accessory
 SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType) {
   var platform = this;
-  var uuid = UUIDGen.generate(path);
+  var uuid = UUIDGen.generate(identifier); // Changed from 'path' in 0.0.4
 
   this.log(`Add Accessory: ${accessoryName}, ${path}, ${deviceType}`);
 
@@ -978,8 +978,8 @@ SignalKPlatform.prototype.processFullTree = function(body) {
               && this.noignoredPath(path)
               && !this.accessories.has(path) ) {
 
-          httpLog(`Preparing charger device: ${JSON.stringify(chargers[instance])}`);
-          httpLog('Preparing charger device: %O', chargers[instance]);
+          // httpLog(`Preparing charger device: ${JSON.stringify(chargers[instance])}`);
+          httpLog('Preparing charger device: \n %O', chargers[instance]);
           var displayName = this.getName(path, device.displayName);
           var deviceType = device.deviceType;
           var manufacturer = 'Victron';
@@ -987,7 +987,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
           var deviceKey = `chargers.${instance}.${deviceType}`;
 
           // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
-          httpLog(`Adding Charger device: \n accessoryName: ${displayName} \n identifier: ${deviceKey} \n path: ${chargerInstancePath} \n manufacturer: ${manufacturer} \n model: ${model} \n serialnumber: ${displayName} \n categoryPath: ${chargersPath} deviceType: ${deviceType}`);
+          httpLog(`Adding Charger device: \n accessoryName: ${displayName} \n identifier: ${deviceKey} \n path: ${chargerInstancePath} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${displayName} \n categoryPath: ${chargersPath} \n deviceType: ${deviceType}`);
           this.addAccessory(displayName, deviceKey, chargerInstancePath, manufacturer, model, displayName, chargersPath, deviceType);
         }
       });
