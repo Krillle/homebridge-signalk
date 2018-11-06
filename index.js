@@ -979,6 +979,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
               && !this.accessories.has(path) ) {
 
           httpLog(`Preparing charger device: ${JSON.stringify(chargers[instance])}`);
+          httpLog('Preparing charger device: %O', chargers[instance]);
           var displayName = this.getName(path, device.displayName);
           var deviceType = device.deviceType;
           var manufacturer = 'Victron';
