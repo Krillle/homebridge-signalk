@@ -260,7 +260,7 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
     case 'batterySOC':
       this.addSOCBatteryServices(accessory);
       break;
-    case 'leak':
+    case 'leakSensor':
       this.addLeakServices(accessory);
       break;
 }
@@ -439,7 +439,7 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
       newAccessory.addService(Service.BatteryService, accessoryName)
       this.addSOCBatteryServices(newAccessory);
       break;
-    case 'leak':
+    case 'leakSensor':
       newAccessory.addService(Service.LeakSensor, accessoryName)
       this.addLeakServices(newAccessory);
       break;
@@ -868,6 +868,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
       if (device.slice(0,empirBusIdentifier.length) == empirBusIdentifier
             && this.noignoredPath(`${controlsPath}.${device}`)
             && !this.accessories.has(`${controlsPath}.${device}`) ) {
+        httpLog(`Preparing EmpirBus NXT device: ${device} \n %O`, controls[device]);
         var path = `${controlsPath}.${device}`;
         var fallbackName = controls[device].meta.displayName ? controls[device].meta.displayName.value : controls[device].name.value;
         var displayName = this.getName(path, fallbackName);
@@ -875,6 +876,8 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         var manufacturer = controls[device].meta.manufacturer.name.value || "EmpirBus";
         var model = controls[device].meta.manufacturer.model.value || "NXT DCM";
 
+        // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
+        httpLog(`Adding EmpirBus NXT device: \n accessoryName: ${displayName}, identifier: ${device}, path: ${path} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${controls[device].name.value} \n categoryPath: ${controlsPath}, deviceType: ${deviceType}`);
         this.addAccessory(displayName, device, path, manufacturer, model, controls[device].name.value, controlsPath, deviceType);
       } else
       if (device.slice(0,venusRelaisIdentifier.length) == venusRelaisIdentifier
@@ -895,7 +898,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         }
 
         // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
-        httpLog(`Adding Charger device: \n accessoryName: ${displayName}, identifier: ${device}, path: ${path} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${device} \n categoryPath: ${controlsPath}, deviceType: ${deviceType}`);
+        httpLog(`Adding Venus GX device: \n accessoryName: ${displayName}, identifier: ${device}, path: ${path} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${device} \n categoryPath: ${controlsPath}, deviceType: ${deviceType}`);
         this.addAccessory(displayName, device, path, manufacturer, model, device, controlsPath, deviceType);
       }
     });
@@ -961,7 +964,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         var deviceKey = `batteries.${instance}`;
 
         // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
-        httpLog(`Adding Charger device: \n accessoryName: ${displayName}, identifier: ${deviceKey}, path: ${path} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${displayName} \n categoryPath: ${batteriesPath}, deviceType: ${deviceType}`);
+        httpLog(`Adding battery device: \n accessoryName: ${displayName}, identifier: ${deviceKey}, path: ${path} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${displayName} \n categoryPath: ${batteriesPath}, deviceType: ${deviceType}`);
         this.addAccessory(displayName, deviceKey, path, manufacturer, model, displayName, batteriesPath, deviceType);
       }
     });
@@ -990,7 +993,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
           var deviceKey = `chargers.${instance}.${deviceType}`;
 
           // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
-          httpLog(`Adding Charger device: \n accessoryName: ${displayName}, identifier: ${deviceKey}, path: ${chargerInstancePath} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${displayName} \n categoryPath: ${chargersPath}, deviceType: ${deviceType}`);
+          httpLog(`Adding charger device: \n accessoryName: ${displayName}, identifier: ${deviceKey}, path: ${chargerInstancePath} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${displayName} \n categoryPath: ${chargersPath}, deviceType: ${deviceType}`);
           this.addAccessory(displayName, deviceKey, chargerInstancePath, manufacturer, model, displayName, chargersPath, deviceType);
         }
       });
