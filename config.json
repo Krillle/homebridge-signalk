@@ -145,6 +145,10 @@
         "electrical.switches.empirBusNxt-instance22-dimmer1":"Stufen",
         "electrical.switches.empirBusNxt-instance22-dimmer2":"Lichtleiste",
         "electrical.switches.empirBusNxt-instance24-dimmer1":"Gangborde"
+      },
+
+      "deviceTypes": {
+        "electrical.switches.empirBusNxt-instance16-switch5":"leakSensor"
       }
     }
 

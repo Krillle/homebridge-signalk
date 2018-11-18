@@ -872,7 +872,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         var path = `${controlsPath}.${device}`;
         var fallbackName = controls[device].meta.displayName ? controls[device].meta.displayName.value : controls[device].name.value;
         var displayName = this.getName(path, fallbackName);
-        var deviceType = controls[device].type.value;
+        var deviceType = this.getDeviceType(`${controlsPath}.${device}`) || controls[device].type.value;
         var manufacturer = controls[device].meta.manufacturer.name.value || "EmpirBus";
         var model = controls[device].meta.manufacturer.model.value || "NXT DCM";
 
@@ -1033,6 +1033,11 @@ SignalKPlatform.prototype.getName = function(path, defaultName) {
 // Returns true if path is not an ignored path in config.json
 SignalKPlatform.prototype.noignoredPath = function(path) {
   return this.config.ignoredPaths.indexOf(path) == -1
+}
+
+// Returns device type if path is in deviceTypes in config.json, else returns false
+SignalKPlatform.prototype.getDeviceType = function(path) {
+  return (this.config.deviceTypes && this.config.deviceTypes[path]) || false
 }
 
 // - - - - - - - Read and write Signal K API keys functions - - - - - - -

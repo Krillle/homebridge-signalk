@@ -4,7 +4,7 @@
 - feature: Charger Mode is supported (electrical.chargers.<#>.mode)
 - feature: Charger State of Charge is supported (electrical.chargers.<#>.capacity.stateOfCharge)
 
-- feature: EmpirBus NXT switches defined as special device type `leakSensor` are shown as a leak sensor
+- feature: EmpirBus NXT switches marked as device type `leakSensor` are shown in Home App as leak sensor
 
 - fix: Cleanup HomeKit device meta data for new devices. Should not have side effects on existing devices.
 
