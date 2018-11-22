@@ -971,37 +971,37 @@ SignalKPlatform.prototype.processFullTree = function(body) {
   }
   this.log('Done');
 
-  // Add chargers
-  this.log("Adding chargers");
-  var chargers = _.get(tree, chargersPath);
-  if ( chargers ) {
-    _.keys(chargers).forEach(instance => {
-      var chargerInstancePath = `${chargersPath}.${instance}`;
-
-      chargersDevices.forEach(device => {
-        var path = `${chargerInstancePath}.${device.key}`;
-        var chargerDevice = _.get(tree, path);
-        if ( chargerDevice
-              && this.noignoredPath(path)
-              && !this.accessories.has(path) ) {
-
-          httpLog('Preparing charger device: \n %O', chargers[instance]);
-          var displayName = this.getName(path, device.displayName);
-          var deviceType = device.deviceType;
-          var manufacturer = 'Victron';
-          var model = device.displayName;
-          var deviceKey = `chargers.${instance}.${deviceType}`;
-
-          // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
-          httpLog(`Adding charger device: \n accessoryName: ${displayName}, identifier: ${deviceKey}, path: ${chargerInstancePath} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${displayName} \n categoryPath: ${chargersPath}, deviceType: ${deviceType}`);
-          // this.addAccessory(displayName, deviceKey, chargerInstancePath, manufacturer, model, displayName, chargersPath, deviceType);
-          this.log(`Ignoring charger device: ${displayName}, identifier: ${deviceKey}, path: ${chargerInstancePath}`);
-        }
-      });
-
-    });
-  }
-  this.log('Done');
+  // // Add chargers
+  // this.log("Adding chargers");
+  // var chargers = _.get(tree, chargersPath);
+  // if ( chargers ) {
+  //   _.keys(chargers).forEach(instance => {
+  //     var chargerInstancePath = `${chargersPath}.${instance}`;
+  //
+  //     chargersDevices.forEach(device => {
+  //       var path = `${chargerInstancePath}.${device.key}`;
+  //       var chargerDevice = _.get(tree, path);
+  //       if ( chargerDevice
+  //             && this.noignoredPath(path)
+  //             && !this.accessories.has(path) ) {
+  //
+  //         httpLog('Preparing charger device: \n %O', chargers[instance]);
+  //         var displayName = this.getName(path, device.displayName);
+  //         var deviceType = device.deviceType;
+  //         var manufacturer = 'Victron';
+  //         var model = device.displayName;
+  //         var deviceKey = `chargers.${instance}.${deviceType}`;
+  //
+  //         // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
+  //         httpLog(`Adding charger device: \n accessoryName: ${displayName}, identifier: ${deviceKey}, path: ${chargerInstancePath} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${displayName} \n categoryPath: ${chargersPath}, deviceType: ${deviceType}`);
+  //         this.addAccessory(displayName, deviceKey, chargerInstancePath, manufacturer, model, displayName, chargersPath, deviceType);
+  //         // this.log(`Ignoring charger device: ${displayName}, identifier: ${deviceKey}, path: ${chargerInstancePath}`);
+  //       }
+  //     });
+  //
+  //   });
+  // }
+  // this.log('Done');
 
   // Add engine data
   this.log("Adding engine data");
