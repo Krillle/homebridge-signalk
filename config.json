@@ -19,6 +19,7 @@
       "name" : "MyBoat",
       "host": "127.0.0.1:3000",
       "ssl": false,
+      "securityToken": "your.signalk.token.here",
 
       "emptyBatteryVoltage" : "22.5",
       "lowBatteryVoltage" : "23.5",
