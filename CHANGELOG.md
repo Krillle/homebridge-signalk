@@ -1,6 +1,12 @@
 ## Change Log
 
-### v1.0.0 (2018/11/22 23:20)
+### v1.0.0 (2019/01/12 11:00)
+- fix: Venus GX relay on/off status is shown correctly
+
+**Known issues:**
+- Venus GX meta data is not processed
+
+### v0.1.0 (2018/11/22 23:20)
 **WARNING:** Major change in HomeKit device ID. You will have to delete and newly add all Signal K devices
 - feature: EmpirBus NXT switches marked as device type `leakSensor` are shown in Home App as a leak sensor
 - fix: change HomeKit device UUID from possibly duplicate path to unique identifier
