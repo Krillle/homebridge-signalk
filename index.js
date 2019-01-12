@@ -484,7 +484,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   .on('get', this.getOnOff.bind(this, dataPath))
   .on('set', function(value, callback) {
     platform.log(`Set dimmer ${accessory.displayName}.state to ${value}`)
-    platform.setOnOff(accessory.context.identifier, value, (E)=> {platform.log('Device unreachable:', E);}) // FIXME: Device unreachable
+    platform.setOnOff(accessory.context.identifier, value, (E, M)=> {platform.log('Device unreachable:');}) // FIXME: Device unreachable
     callback();
   })
 
@@ -1144,7 +1144,7 @@ SignalKPlatform.prototype.setValue = function(device, context, value, cb) {
               cb(error, null)     // FIXME: Error is not used
             } else if ( response.statusCode == 401 ) {
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
-              cb(new Error(`UNAUTHORIZED bad or expired token ${response.statusCode}`), null)     // FIXME: Error is not used
+              cb(new Error(`UNAUTHORIZED missing, bad or expired token ${response.statusCode}`), null)     // FIXME: Error is not used
             } else if ( response.statusCode != 200 ) {   // FIXME: Venus GX response is 202 SUCCESS
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error(`invalid response ${response.statusCode}`), null)     // FIXME: Error is not used
