@@ -1144,8 +1144,7 @@ SignalKPlatform.prototype.setValue = function(device, context, value, cb) {
               cb(error, null)
             } else if ( response.statusCode == 401 ) {
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
-//              cb(`${response.statusCode} UNAUTHORIZED missing, bad or expired Signal K security token`, null)
-              cb(new Error(`${response.statusCode} UNAUTHORIZED missing, bad or expired Signal K security token`), null)
+              cb(`${response.statusCode} UNAUTHORIZED missing, bad or expired Signal K security token`, null)
             } else if ( response.statusCode != 200 && response.statusCode != 202 ) {   // EmpirBus response is 200 OK, Venus GX response is 202 SUCCESS
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error(`invalid response ${response.statusCode}`), null)
