@@ -1,6 +1,6 @@
 {
   "name": "homebridge-signalk",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Signal K plugin for homebridge: https://github.com/Krillle/homebridge-signalk",
   "license": "ISC",
   "author": "Christian Wegerhoff <christian.wegerhoff@icloud.com>",
