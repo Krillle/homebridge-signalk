@@ -464,10 +464,10 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
     // console.log(stateBefore);
 
     // Off/On/Off/Restore cycle
-    platform.setOnOff(accessory.context.identifier, false, (E, M)=> {platform.log('Device unreachable:', E, M);});
-    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, true, (E, M)=> {platform.log('Device unreachable:', E, M);})
+    platform.setOnOff(accessory.context.identifier, false, (E)=> {platform.log('Device unreachable:', E);});
+    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, true, (E)=> {platform.log('Device unreachable:', E);})
                    }, 250);
-    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, false, (E, M)=> {platform.log('Device unreachable:', E, M);})
+    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, false, (E)=> {platform.log('Device unreachable:', E);})
                    }, 750);
     // FIXME: Restore original state of device before cycle
     //  setTimeout(()=>{platform.setOnOff(identifier, stateBefore)}, 1000);
@@ -484,7 +484,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   .on('get', this.getOnOff.bind(this, dataPath))
   .on('set', function(value, callback) {
     platform.log(`Set dimmer ${accessory.displayName}.state to ${value}`)
-    platform.setOnOff(accessory.context.identifier, value, (E, M)=> {platform.log('Device unreachable:', E, M);})
+    platform.setOnOff(accessory.context.identifier, value, (E)=> {platform.log('Device unreachable:', E);})
     callback();
   })
 
@@ -508,7 +508,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   .on('get', this.getRatio.bind(this, dataPath))
   .on('set', function(value, callback) {
     platform.log(`Set dimmer ${accessory.displayName}.dimmingLevel to ${value}%`)
-    platform.SetRatio(accessory.context.identifier, value, ()=> {platform.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
+    platform.SetRatio(accessory.context.identifier, value, (E)=> {platform.log('Device unreachable:', E);})
     callback();
   });
 
@@ -538,7 +538,7 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
   .on('get', this.getOnOff.bind(this, dataPath))
   .on('set', function(value, callback) {
     platform.log(`Set switch ${accessory.displayName}.state to ${value}`)
-    platform.setOnOff(accessory.context.identifier, value, ()=> {platform.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
+    platform.setOnOff(accessory.context.identifier, value, (E)=> {platform.log('Device unreachable:', E);})
     callback();
   });
 
@@ -1141,11 +1141,11 @@ SignalKPlatform.prototype.setValue = function(device, context, value, cb) {
           (error, response, body) => {
             if ( error ) {
               this.log(`response: ${JSON.stringify(response)} body: ${JSON.stringify(body)}`)
-              cb(error, null)     // FIXME: Error is not used
+              cb(error, null)
             } else if ( response.statusCode == 401 ) {
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
-              cb(null, `UNAUTHORIZED missing, bad or expired Signal K security token ${response.statusCode}`)
-            } else if ( response.statusCode != 200 && response.statusCode != 202 ) {   // EmpirBus resonse is 200 OK, Venus GX response is 202 SUCCESS
+              cb(`${response.statusCode} UNAUTHORIZED missing, bad or expired Signal K security token`, null)
+            } else if ( response.statusCode != 200 && response.statusCode != 202 ) {   // EmpirBus response is 200 OK, Venus GX response is 202 SUCCESS
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error(`invalid response ${response.statusCode}`), null)
             } else {
