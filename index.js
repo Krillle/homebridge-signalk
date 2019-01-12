@@ -23,7 +23,7 @@ const empirBusIdentifier = 'empirBusNxt'
 const venusRelaisIdentifier = 'venus'
 const controlsPutPath = 'electrical/switches/'
 
-const switchOnValues = [ 'true', ' on', 'low power', 'passthrough' ] // All Signal K values which represent a switch is "on"
+const switchOnValues = [ 'true', 'on', 'low power', 'passthrough', 1 ] // All Signal K values which represent a switch is "on"
 
 // Victron Venus GX Chargers
 const chargersPath = 'electrical.chargers'
@@ -484,7 +484,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   .on('get', this.getOnOff.bind(this, dataPath))
   .on('set', function(value, callback) {
     platform.log(`Set dimmer ${accessory.displayName}.state to ${value}`)
-    platform.setOnOff(accessory.context.identifier, value, ()=> {platform.log('FIXME: Device unreachable');}) // FIXME: Device unreachable
+    platform.setOnOff(accessory.context.identifier, value, (E)=> {platform.log('Device unreachable:', E);}) // FIXME: Device unreachable
     callback();
   })
 
@@ -1142,7 +1142,10 @@ SignalKPlatform.prototype.setValue = function(device, context, value, cb) {
             if ( error ) {
               this.log(`response: ${JSON.stringify(response)} body: ${JSON.stringify(body)}`)
               cb(error, null)     // FIXME: Error is not used
-            } else if ( response.statusCode != 200 ) {
+            } else if ( response.statusCode == 401 ) {
+              this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
+              cb(new Error(`UNAUTHORIZED bad or expired token ${response.statusCode}`), null)     // FIXME: Error is not used
+            } else if ( response.statusCode != 200 ) {   // FIXME: Venus GX response is 202 SUCCESS
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error(`invalid response ${response.statusCode}`), null)     // FIXME: Error is not used
             } else {

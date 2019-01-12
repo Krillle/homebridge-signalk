@@ -99,6 +99,7 @@ The plugin awaits and accepts the following settings in the Homebridge `config.j
 ### Optional parameters and their default values if omitted:
 `"name" : "NameOfVessel"`  
 `"ssl": false` Set to `true` if Signal K server is awaiting connections via SSL  
+`"securityToken": "your.signalk.token.here"` Signal K server security token (usually needed for write access)
 
 `"emptyBatteryVoltage" : "22.5"` Battery SOC shown as 0% (ignored if SOC is reported from battery itself)  
 `"lowBatteryVoltage" : "23.5"` Low battery warning if battery voltage is at or below  
