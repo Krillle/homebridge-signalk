@@ -464,10 +464,10 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
     // console.log(stateBefore);
 
     // Off/On/Off/Restore cycle
-    platform.setOnOff(accessory.context.identifier, false, (E)=> {platform.log('Device unreachable:', E);});
-    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, true, (E)=> {platform.log('Device unreachable:', E);})
+    platform.setOnOff(accessory.context.identifier, false, (error)=> {platform.log('Device unreachable:', error.message);});
+    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, true, (error)=> {platform.log('Device unreachable:', error.message);})
                    }, 250);
-    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, false, (E)=> {platform.log('Device unreachable:', E);})
+    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, false, (error)=> {platform.log('Device unreachable:', error.message);})
                    }, 750);
     // FIXME: Restore original state of device before cycle
     //  setTimeout(()=>{platform.setOnOff(identifier, stateBefore)}, 1000);
@@ -484,7 +484,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   .on('get', this.getOnOff.bind(this, dataPath))
   .on('set', function(value, callback) {
     platform.log(`Set dimmer ${accessory.displayName}.state to ${value}`)
-    platform.setOnOff(accessory.context.identifier, value, (E)=> {platform.log('Device unreachable:', E);})
+    platform.setOnOff(accessory.context.identifier, value, (error)=> {platform.log('Device unreachable:', error.message);})
     callback();
   })
 
@@ -508,7 +508,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   .on('get', this.getRatio.bind(this, dataPath))
   .on('set', function(value, callback) {
     platform.log(`Set dimmer ${accessory.displayName}.dimmingLevel to ${value}%`)
-    platform.SetRatio(accessory.context.identifier, value, (E)=> {platform.log('Device unreachable:', E);})
+    platform.SetRatio(accessory.context.identifier, value, (error)=> {platform.log('Device unreachable:', error.message);})
     callback();
   });
 
@@ -538,7 +538,7 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
   .on('get', this.getOnOff.bind(this, dataPath))
   .on('set', function(value, callback) {
     platform.log(`Set switch ${accessory.displayName}.state to ${value}`)
-    platform.setOnOff(accessory.context.identifier, value, (E)=> {platform.log('Device unreachable:', E);})
+    platform.setOnOff(accessory.context.identifier, value, (error)=> {platform.log('Device unreachable:', error.message);})
     callback();
   });
 
