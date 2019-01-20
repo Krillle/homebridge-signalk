@@ -196,7 +196,7 @@ function SignalKPlatform(log, config, api) {
         platform.log("Checking for unreachable devices");
         platform.accessories.forEach((accessory, key, map) => {
           platform.checkKey(accessory.context.path, (error, result) => {
-            if (error && error.message == 'device not present: 404' && config.removeDevicesNotPresent || !this.noignoredPath(accessory.context.path)) {
+            if (error && result == 'N/A' && config.removeDevicesNotPresent || !this.noignoredPath(accessory.context.path)) {
               platform.log(`${accessory.displayName} not present or ignored`);
               platform.removeAccessory(accessory);
             }
@@ -1061,7 +1061,7 @@ SignalKPlatform.prototype.getValue = function(path, cb, conversion) {
               cb(error, null)
             } else if ( response.statusCode == 404 ) {
               httpLog(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
-              cb(new Error('device not present: 404'), null)  // removeAccessory relies on that error text
+              cb(new Error('device not present: 404'), 'N/A')  // removeAccessory relies on error result 'N/A'
             } else if ( response.statusCode != 200 ) {
               httpLog(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error(`invalid response ${response.statusCode}`), null)
