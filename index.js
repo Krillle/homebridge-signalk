@@ -80,6 +80,12 @@ const engines = [
   { key : 'starboard.temperature' , displayName : 'Engine starboard' , deviceType : 'temperature'}
 ];
 
+var errorHandler = (error) => { if ( error ) {
+              platform.log('Device unreachable:', error.message)
+            } else {
+              platform.log('Success')
+            }
+    };
 
 module.exports = function(homebridge) {
   // console.log("homebridge API version: " + homebridge.version);
@@ -464,10 +470,10 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
     // console.log(stateBefore);
 
     // Off/On/Off/Restore cycle
-    platform.setOnOff(accessory.context.identifier, false, (error)=> {platform.log('Device unreachable:', error.message);});
-    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, true, (error)=> {platform.log('Device unreachable:', error.message);})
+    platform.setOnOff(accessory.context.identifier, false, errorHandler);
+    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, true, errorHandler)
                    }, 250);
-    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, false, (error)=> {platform.log('Device unreachable:', error.message);})
+    setTimeout(()=>{platform.setOnOff(accessory.context.identifier, false, errorHandler)
                    }, 750);
     // FIXME: Restore original state of device before cycle
     //  setTimeout(()=>{platform.setOnOff(identifier, stateBefore)}, 1000);
@@ -484,7 +490,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   .on('get', this.getOnOff.bind(this, dataPath))
   .on('set', function(value, callback) {
     platform.log(`Set dimmer ${accessory.displayName}.state to ${value}`)
-    platform.setOnOff(accessory.context.identifier, value, (error)=> {platform.log('Device unreachable:', error.message);})
+    platform.setOnOff(accessory.context.identifier, value, errorHandler)
     callback();
   })
 
@@ -508,7 +514,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   .on('get', this.getRatio.bind(this, dataPath))
   .on('set', function(value, callback) {
     platform.log(`Set dimmer ${accessory.displayName}.dimmingLevel to ${value}%`)
-    platform.SetRatio(accessory.context.identifier, value, (error)=> {platform.log('Device unreachable:', error.message);})
+    platform.SetRatio(accessory.context.identifier, value, errorHandler)
     callback();
   });
 
@@ -538,7 +544,7 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
   .on('get', this.getOnOff.bind(this, dataPath))
   .on('set', function(value, callback) {
     platform.log(`Set switch ${accessory.displayName}.state to ${value}`)
-    platform.setOnOff(accessory.context.identifier, value, (error)=> {platform.log('Device unreachable:', error.message);})
+    platform.setOnOff(accessory.context.identifier, value, errorHandler)
     callback();
   });
 
@@ -1061,7 +1067,7 @@ SignalKPlatform.prototype.getValue = function(path, cb, conversion) {
               cb(error, null)
             } else if ( response.statusCode == 404 ) {
               httpLog(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
-              cb(new Error('device not present: 404'), 'N/A')  // removeAccessory relies on error result 'N/A'
+              cb(new Error('device not present 404'), 'N/A')  // removeAccessory relies on result 'N/A'
             } else if ( response.statusCode != 200 ) {
               httpLog(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error(`invalid response ${response.statusCode}`), null)
@@ -1144,7 +1150,7 @@ SignalKPlatform.prototype.setValue = function(device, context, value, cb) {
               cb(error, null)
             } else if ( response.statusCode == 401 ) {
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
-              cb(`${response.statusCode} UNAUTHORIZED missing, bad or expired Signal K security token`, null)
+              cb(new Error(`missing, bad or expired Signal K security token ${response.statusCode}`), null)
             } else if ( response.statusCode != 200 && response.statusCode != 202 ) {   // EmpirBus response is 200 OK, Venus GX response is 202 SUCCESS
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error(`invalid response ${response.statusCode}`), null)
