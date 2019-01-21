@@ -1,5 +1,9 @@
 ## Change Log
 
+### v1.0.1 (2019/01/21 23:30)
+- chore: HTTP result logging
+- fix: Venus GX relay on/off status is shown correctly
+
 ### v1.0.0 (2019/01/12 11:00)
 - fix: Venus GX relay on/off status is shown correctly
 
