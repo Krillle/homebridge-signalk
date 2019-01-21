@@ -23,7 +23,7 @@ const empirBusIdentifier = 'empirBusNxt'
 const venusRelaisIdentifier = 'venus'
 const controlsPutPath = 'electrical/switches/'
 
-const switchOnValues = [ 'true', 'on', 'low power', 'passthrough', 1 ] // All Signal K values which represent a switch is "on"
+const switchOnValues = [ 'true', 'on', 'low power', 'passthrough', '1' ] // All Signal K values which represent a switch is "on"
 
 // Victron Venus GX Chargers
 const chargersPath = 'electrical.chargers'
@@ -83,7 +83,7 @@ const engines = [
 var errorHandler = (error) => { if ( error ) {
               platform.log('Device unreachable:', error.message)
             } else {
-              platform.log('Success')
+              platform.log('Ok')
             }
     };
 
@@ -1072,7 +1072,7 @@ SignalKPlatform.prototype.getValue = function(path, cb, conversion) {
               httpLog(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error(`invalid response ${response.statusCode}`), null)
             } else {
-              httpLog('Success:', body, '>', conversion(body))
+              httpLog('Ok:', body, '>', conversion(body))
               cb(null, conversion(body))
             }
           })
@@ -1155,7 +1155,7 @@ SignalKPlatform.prototype.setValue = function(device, context, value, cb) {
               this.log(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error(`invalid response ${response.statusCode}`), null)
             } else {
-              httpLog('Success.')
+              httpLog('Ok')
               cb(null, null)
             }
           })
