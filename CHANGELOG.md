@@ -1,5 +1,8 @@
 ## Change Log
 
+### v1.0.2 (2019/1/14 21:30)
+- fix: catch error if no ignoredPaths in config.json
+
 ### v1.0.1 (2019/01/21 23:30)
 - chore: HTTP result logging
 - fix: Venus GX relay on/off status is shown correctly
