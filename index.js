@@ -1039,7 +1039,7 @@ SignalKPlatform.prototype.getName = function(path, defaultName) {
 
 // Returns true if path is not an ignored path in config.json
 SignalKPlatform.prototype.noignoredPath = function(path) {
-  return this.config.ignoredPaths.indexOf(path) == -1
+  return (this.config.ignoredPaths && this.config.ignoredPaths.indexOf(path) == -1)
 }
 
 // Returns device type if path is in deviceTypes in config.json, else returns false
