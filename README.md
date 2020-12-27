@@ -50,8 +50,8 @@ The following Signal K standard keys for batteries and chargers are mapped to hu
 
 /electrical/batteries/\*  
 
-/electrical.chargers.<#>.mode   
-/electrical.chargers.<#>.capacity.stateOfCharge
+/electrical.chargers.<#>.mode (planned for future version)   
+/electrical.chargers.<#>.capacity.stateOfCharge (planned for future version)
 
 HomeKit does not support batteries as stand alone devices yet, so a humidity sensor is the best matching device showing percentages representing the state of charge. Batteries on low level show a low battery warning.
 
