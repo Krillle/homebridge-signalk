@@ -201,12 +201,17 @@ function SignalKPlatform(log, config, api) {
         // Remove not reachable accessories: cached accessories no more present in Signal K
         platform.log("Checking for unreachable devices");
         platform.accessories.forEach((accessory, key, map) => {
-          platform.checkKey(accessory.context.path, (error, result) => {
-            if (error && result == 'N/A' && config.removeDevicesNotPresent || !this.noignoredPath(accessory.context.path)) {
-              platform.log(`${accessory.displayName} not present or ignored`);
-              platform.removeAccessory(accessory);
-            }
-          })
+          if (!this.noignoredPath(accessory.context.path)) {
+            platform.log(`${accessory.displayName} ignored`);
+            platform.removeAccessory(accessory);
+          } else if (config.removeDevicesNotPresent) {
+            platform.checkKey(accessory.context.path, (error, result) => {
+              if (error && result == 'N/A') {
+                platform.log(`${accessory.displayName} not present`);
+                platform.removeAccessory(accessory);
+              }
+            })
+          }
         });
 
         // Start accessories value updating
