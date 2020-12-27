@@ -11,6 +11,8 @@ var Accessory, Service, Characteristic, UUIDGen;
 const urlPath = 'signalk/v1/api/vessels/self/'
 const wsPath = 'signalk/v1/stream?subscribe=none' // none will stream only the heartbeat, until the client issues subscribe messages in the WebSocket stream
 
+const autodetectNewAccessoriesInterval = 15 * 60 * 1000 // Interval to check for new devices
+
 // EmpirBus NXT + Venus GX switches and dimmer
 //
 // Key path according to EmpirBus Application Specific PGN Data Model 2 (2x word + 8x bit) per instance:
@@ -221,6 +223,8 @@ function SignalKPlatform(log, config, api) {
         // Addd new accessories in Signal K
         platform.log("Looking for new accessories");
         platform.autodetectNewAccessories()
+
+        setInterval(autodetectNewAccessories, autodetectNewAccessoriesInterval);
 
       }.bind(this));
   }
@@ -842,7 +846,7 @@ SignalKPlatform.prototype.removeAccessory = function(accessory) {
 // - - - - - - - - - - - - - - - Signal K specific - - - - - - - - - - - - - -
 
 // Autodetect Devices
-// Autodetect from API all Dimmers, Switches
+// Autodetect from API all HomeKit suitable devices
 SignalKPlatform.prototype.autodetectNewAccessories = function() {
   this.log("Autodecting " + this.url);
 
