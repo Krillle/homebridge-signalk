@@ -1,9 +1,15 @@
 ## Change Log
 
-### v1.0.3 (2019/1/14 21:30)
+### v1.0.4 (2020/12/28 21:30)
+- feature: delay first autodetect new devices for 10 seconds to give Signal K time to build API tree
+- feature: autodetect new devices every 15 mins
+- feature: add Homebridge config.scheme
+- chore: optimize removal of devices not present or ignored
+
+### v1.0.3 (2020/12/27 23:00)
 - fix: if no ignoredPaths in config.json include any path
 
-### v1.0.2 (2019/1/14 21:30)
+### v1.0.2 (2020/12/14 21:30)
 - fix: catch error if no ignoredPaths in config.json
 
 ### v1.0.1 (2019/01/21 23:30)

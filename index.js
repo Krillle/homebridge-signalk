@@ -11,7 +11,8 @@ var Accessory, Service, Characteristic, UUIDGen;
 const urlPath = 'signalk/v1/api/vessels/self/'
 const wsPath = 'signalk/v1/stream?subscribe=none' // none will stream only the heartbeat, until the client issues subscribe messages in the WebSocket stream
 
-const autodetectNewAccessoriesInterval = 15 * 60 * 1000 // Interval to check for new devices
+const defaultAutodetectNewAccessoriesDelay = 10000 // Delay of first autodetecting new devices to give Signal K time to build API tree (in milliseconds)
+const defaultAutodetectNewAccessoriesInterval = 15 * 60 * 1000 // Interval to check for new devices (in milliseconds)
 
 // EmpirBus NXT + Venus GX switches and dimmer
 //
@@ -71,7 +72,7 @@ const defaultLowBallastLevel = 50.0
 // Batteries
 const batteriesPath = 'electrical.batteries'
 const defaultEmptyBatteryVoltage = 22
-const defaultLowBatteryVoltage = 23
+const defaultLowBatteryVoltage = 23.5
 const defaultFullBatteryVoltage = 26
 const defaultChargingBatteryVoltage = 27
 
@@ -131,6 +132,9 @@ function SignalKPlatform(log, config, api) {
   }
   this.ws = new websocket(this.wsl, "ws", wsOptions);
   this.wsInitiated = false;
+
+  this.autodetectNewAccessoriesDelay = Number(config.autodetectNewAccessoriesDelay) || autodetectNewAccessoriesDelay;
+  this.autodetectNewAccessoriesInterval = Number(config.autodetectNewAccessoriesInterval) || defaultAutodetectNewAccessoriesInterval;
 
   this.emptyBatteryVoltage = Number(config.emptyBatteryVoltage) || defaultEmptyBatteryVoltage;
   this.lowBatteryVoltage = Number(config.lowBatteryVoltage) || defaultLowBatteryVoltage;
@@ -221,10 +225,9 @@ function SignalKPlatform(log, config, api) {
         this.wsInitiated = true;
 
         // Addd new accessories in Signal K
-        platform.log("Looking for new accessories");
-        platform.autodetectNewAccessories()
+        setTimeout(platform.autodetectNewAccessories, this.autodetectNewAccessoriesDelay);
 
-        setInterval(autodetectNewAccessories, autodetectNewAccessoriesInterval);
+        setInterval(platform.autodetectNewAccessories, this.autodetectNewAccessoriesInterval);
 
       }.bind(this));
   }
@@ -848,7 +851,7 @@ SignalKPlatform.prototype.removeAccessory = function(accessory) {
 // Autodetect Devices
 // Autodetect from API all HomeKit suitable devices
 SignalKPlatform.prototype.autodetectNewAccessories = function() {
-  this.log("Autodecting " + this.url);
+  this.log("Autodecting new accessories at " + this.url);
 
   let headers = {}
 

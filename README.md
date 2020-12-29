@@ -101,10 +101,13 @@ The plugin awaits and accepts the following settings in the Homebridge `config.j
 `"ssl": false` Set to `true` if Signal K server is awaiting connections via SSL  
 `"securityToken": "your.signalk.token.here"` Signal K server security token (usually needed for write access)
 
-`"emptyBatteryVoltage" : "22.5"` Battery SOC shown as 0% (ignored if SOC is reported from battery itself)  
+`"autodetectNewAccessoriesDelay": "10000"` Delay of first autodetecting new devices to give Signal K time to build API tree (in milliseconds)
+`"autodetectNewAccessoriesInterval": "900000"` Interval to check for new devices (in milliseconds)
+
+`"emptyBatteryVoltage" : "22.0"` Battery SOC shown as 0% (ignored if SOC is reported from battery itself)  
 `"lowBatteryVoltage" : "23.5"` Low battery warning if battery voltage is at or below  
-`"fullBatteryVoltage" : "26.5"` Battery SOC shown as 100% (ignored if SOC is reported from battery itself)  
-`"chargingBatteryVoltage" : "27.5"`Battery shown as charging if battery voltage is at or above  
+`"fullBatteryVoltage" : "26.0"` Battery SOC shown as 100% (ignored if SOC is reported from battery itself)  
+`"chargingBatteryVoltage" : "27.0"`Battery shown as charging if battery voltage is at or above  
 `"lowFreshWaterLevel" : "25.0"` Low tank (battery) warning if tank level is at or below  
 `"highWasteWaterLevel" : "75.0"` Low battery warning if tank level is at or above  
 `"highBlackWaterLevel" : "75.0"` Low battery warning if tank level is at or above  

@@ -1,0 +1,154 @@
+{
+    "pluginAlias": "Signal K",
+    "pluginType": "platform",
+    "singular": false,
+    "headerDisplay": "This plugin maps [API keys of a Signal K server](https://www.npmjs.com/package/homebridge-signalk) to matching HomeKit devices.",
+    "footerDisplay": "For help or in case of issues please visit the [GitHub repository](https://github.com/Krillle/homebridge-signalk/issues).",
+    "schema": {
+        "type": "object",
+        "properties": {
+            "host": {
+                "title": "Signal K host",
+                "type": "string",
+                "default": "127.0.0.1:3000",
+                "required": true,
+                "description": "Hostname or IP address and port of your Signal K server"
+            },
+            "ssl": {
+                "title": "Signal K host uses SSL",
+                "type": "boolean",
+                "default": true,
+                "required": true,
+                "description": "Check if Signal K server is awaiting connections via SSL"
+            },
+             "securityToken": {
+                "title": "Signal K security Token",
+                "type": "string",
+                "default": true,
+                "required": false,
+                "description": "Signal K server security token if any (usually needed for write access)"
+            },
+
+            "autodetectNewAccessoriesDelay": {
+               "title": "Delay Detecting New Devices",
+               "type": "integer",
+               "placeholder": 10000,
+               "description": " Delay of first autodetecting new devices to give Signal K time to build API tree (in milliseconds)"
+           },
+           "autodetectNewAccessoriesInterval": {
+              "title": "Detecting New Devices Interval",
+              "type": "integer",
+              "placeholder": 900000,
+              "description": "Interval to check for new devices (in milliseconds)"
+          },
+            "removeDevicesNotPresent": {
+               "title": "Remove Devices Not Present in Signal K",
+               "type": "boolean",
+               "placeholder": false,
+               "description": "If checked, devices which are not present in Signal K (after restart of Signal K server) are removed from HomeKit (at start of Homebridge server). Uncheck to prevent devices disappearing after restarting Raspberry Pi in case homebridge loads faster than the Signal K tree is being filled."
+           },
+
+             "emptyBatteryVoltage": {
+                "title": "Empty Battery Voltage",
+                "type": "integer",
+                "placeholder": 22,
+                "description": "Voltage at which battery state of charge will be shown as 0% (ignored if SOC is reported from battery)"
+            },
+            "fullBatteryVoltage": {
+                "title": "Full Battery Voltage",
+                "type": "integer",
+                "placeholder": 26,
+                "description": "Voltage at which battery state of charge will be shown as 100% (ignored if SOC is reported from battery)"
+            },
+            "lowBatteryVoltage": {
+                "title": "Low Battery Voltage",
+                "type": "integer",
+                "placeholder": 23.5,
+                "description": "Voltage below wich a battery low warning will be shown"
+            },
+            "chargingBatteryVoltage": {
+                "title": "Charging Battery Voltage",
+                "type": "integer",
+                "placeholder": 27,
+                "description": "Voltage above wich batteries will be shown as charging"
+            },
+
+            "lowFreshWaterLevel": {
+                "title": "Fresh Water Low Level",
+                "type": "integer",
+                "placeholder": 25,
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Percent level below wich fresh water tanks will shown a batteries"
+            },
+            "highWasteWaterLevel": {
+                "title": "Waster Water High Level",
+                "type": "integer",
+                "placeholder": 75,
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Percent level above wich waste water tanks will shown a warning"
+            },
+            "highBlackWaterLevel": {
+                "title": "Black Water High Level",
+                "type": "integer",
+                "placeholder": 75,
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Percent level above wich black water tanks will shown a warning"
+            },
+            "lowFuelLevel": {
+                "title": "Fuel Low Level",
+                "type": "integer",
+                "placeholder": 50,
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Percent level below wich fuel tanks will shown a warning"
+            },
+            "lowLubricationLevel": {
+                "title": "Lubrication Low Level",
+                "type": "integer",
+                "placeholder": 50,
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Percent level below wich lubrication tanks will shown a warning"
+            },
+            "lowLiveWellLevel": {
+                "title": "Fuel Live Well Level",
+                "type": "integer",
+                "placeholder": 50,
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Percent level below wich live well tanks will shown a warning"
+            },
+            "lowGasLevel": {
+                "title": "Fuel Gas Level",
+                "type": "integer",
+                "placeholder": 50,
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Percent level below wich gas tanks will shown a warning"
+            },
+            "lowBallastLevel": {
+                "title": "Fuel Ballast Level",
+                "type": "integer",
+                "placeholder": 50,
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Percent level below wich ballast tanks will shown a warning"
+            },
+            "ignoredPaths": {
+                "title": "Ignored API Paths",
+                "type": "array",
+                "description": "Signal K API keys for which you don't want to see a device in HomeKit. Associated devices will be deleted from HomeKit if already present.",
+                "items": {
+                    "title": "API Key",
+                    "type": "string",
+                    "placeholder": "tanks.wasteWater.0"
+                }
+            }
+        }
+    },
+    "form": null,
+    "display": null
+}
