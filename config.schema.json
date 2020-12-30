@@ -1,5 +1,5 @@
 {
-    "pluginAlias": "Signal K",
+    "pluginAlias": "SignalK",
     "pluginType": "platform",
     "singular": false,
     "headerDisplay": "This plugin maps [API keys of a Signal K server](https://www.npmjs.com/package/homebridge-signalk) to matching HomeKit devices.",
@@ -24,16 +24,21 @@
              "securityToken": {
                 "title": "Signal K security Token",
                 "type": "string",
-                "default": true,
                 "required": false,
                 "description": "Signal K server security token if any (usually needed for write access)"
             },
 
+            "removeDevicesNotPresent": {
+               "title": "Remove Devices Not Present in Signal K",
+               "type": "boolean",
+               "placeholder": false,
+               "description": "If checked, devices which are not present in Signal K (after restart of Signal K server) are removed from HomeKit (at start of Homebridge server). Uncheck to prevent devices disappearing after restarting Raspberry Pi in case homebridge loads faster than the Signal K tree is being filled."
+           },
             "autodetectNewAccessoriesDelay": {
                "title": "Delay Detecting New Devices",
                "type": "integer",
                "placeholder": 10000,
-               "description": " Delay of first autodetecting new devices to give Signal K time to build API tree (in milliseconds)"
+               "description": " Delay first check for new devices to give Signal K time to build API tree (in milliseconds)"
            },
            "autodetectNewAccessoriesInterval": {
               "title": "Detecting New Devices Interval",
@@ -41,12 +46,6 @@
               "placeholder": 900000,
               "description": "Interval to check for new devices (in milliseconds)"
           },
-            "removeDevicesNotPresent": {
-               "title": "Remove Devices Not Present in Signal K",
-               "type": "boolean",
-               "placeholder": false,
-               "description": "If checked, devices which are not present in Signal K (after restart of Signal K server) are removed from HomeKit (at start of Homebridge server). Uncheck to prevent devices disappearing after restarting Raspberry Pi in case homebridge loads faster than the Signal K tree is being filled."
-           },
 
              "emptyBatteryVoltage": {
                 "title": "Empty Battery Voltage",

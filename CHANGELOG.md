@@ -1,10 +1,12 @@
 ## Change Log
 
-### v1.0.4 (2020/12/28 21:30)
+### v1.1.0 (2020/12/30 01:40)
+- feature: update reachability of devices after 10 seconds to give Signal K time to build API tree
 - feature: delay first autodetect new devices for 10 seconds to give Signal K time to build API tree
 - feature: autodetect new devices every 15 mins
-- feature: add Homebridge config.scheme
-- chore: optimize removal of devices not present or ignored
+- feature: added configuration in Homebridge UI
+- fix: catch error caused by 'meta' delta messages  
+- chore: improved removal of devices not present or ignored
 
 ### v1.0.3 (2020/12/27 23:00)
 - fix: if no ignoredPaths in config.json include any path

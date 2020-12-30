@@ -133,7 +133,7 @@ function SignalKPlatform(log, config, api) {
   this.ws = new websocket(this.wsl, "ws", wsOptions);
   this.wsInitiated = false;
 
-  this.autodetectNewAccessoriesDelay = Number(config.autodetectNewAccessoriesDelay) || autodetectNewAccessoriesDelay;
+  this.autodetectNewAccessoriesDelay = Number(config.autodetectNewAccessoriesDelay) || defaultAutodetectNewAccessoriesDelay;
   this.autodetectNewAccessoriesInterval = Number(config.autodetectNewAccessoriesInterval) || defaultAutodetectNewAccessoriesInterval;
 
   this.emptyBatteryVoltage = Number(config.emptyBatteryVoltage) || defaultEmptyBatteryVoltage;
@@ -205,29 +205,34 @@ function SignalKPlatform(log, config, api) {
         platform.log("Did finish launching");
 
         // Remove not reachable accessories: cached accessories no more present in Signal K
-        platform.log("Checking for unreachable devices");
+        // FIXME: removeAccessory() has a potential race condition with InitiateWebSocket()
+        platform.log("Checking for ignored or unreachable devices");
         platform.accessories.forEach((accessory, key, map) => {
           if (!this.noignoredPath(accessory.context.path)) {
-            platform.log(`${accessory.displayName} ignored`);
+            platform.log('Ignore Accessory', accessory.displayName);
             platform.removeAccessory(accessory);
           } else if (config.removeDevicesNotPresent) {
             platform.checkKey(accessory.context.path, (error, result) => {
               if (error && result == 'N/A') {
-                platform.log(`${accessory.displayName} not present`);
+                platform.log('Not Present Accessory', accessory.displayName);
                 platform.removeAccessory(accessory);
               }
             })
           }
         });
 
+        // Check Reachability after Signal K API tree has initialized
+        setTimeout(platform.updateAccessoriesReachability.bind(this), platform.autodetectNewAccessoriesDelay);
+
         // Start accessories value updating
         platform.InitiateWebSocket()
         this.wsInitiated = true;
 
-        // Addd new accessories in Signal K
-        setTimeout(platform.autodetectNewAccessories, this.autodetectNewAccessoriesDelay);
+        // Initally add new accessories in Signal K
+        setTimeout(platform.autodetectNewAccessories.bind(this), platform.autodetectNewAccessoriesDelay);
 
-        setInterval(platform.autodetectNewAccessories, this.autodetectNewAccessoriesInterval);
+        // Periodically check for new accessories in Signal K
+        setInterval(platform.autodetectNewAccessories.bind(this), platform.autodetectNewAccessoriesInterval);
 
       }.bind(this));
   }
@@ -253,8 +258,6 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
     }
   })
 
-  // FIXME: Ignored paths are added anyway
-  // FIXME: Results in crash ws updates when ignored or unreachable device is deleted afterwards
   // Add Device Services
   switch(accessory.context.deviceType) {
     case 'switch':
@@ -281,7 +284,7 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
     case 'leakSensor':
       this.addLeakServices(accessory);
       break;
-}
+  }
 
   this.accessories.set(accessory.context.path, accessory);
 }
@@ -836,13 +839,14 @@ SignalKPlatform.prototype.updateAccessoriesReachability = function() {
 
 // Remove accessory
 SignalKPlatform.prototype.removeAccessory = function(accessory) {
-  this.log('Remove accessory', accessory.displayName);
+  this.log('Remove Accessory', accessory.displayName);
   this.api.unregisterPlatformAccessories("homebridge-signalk", "SignalK", [accessory]);
   this.accessories.delete(accessory.context.path);
-  this.updateSubscriptions.delete(accessory.context.path);
   accessory.context.subscriptions.forEach(subscription => {
-    this.ws.send(`{"context": "vessels.self","unsubscribe":[{"path":"${subscription}"}]}`)
-    console.log('removed',`{"context": "vessels.self","unsubscribe":[{"path":"${subscription}"}]}`);
+    this.updateSubscriptions.delete(subscription);
+    // FIXME: Scott 30.12.20: Unsubscribing websockets is not implementd in Signal K
+    // this.ws.send(`{"context": "vessels.self","unsubscribe":[{"path":"${subscription}"}]}`)
+    // wsLog('removed',`{"context": "vessels.self","unsubscribe":[{"path":"${subscription}"}]}`);
   })
 }
 
@@ -1197,7 +1201,7 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
   });
 
   var subscriptionMessage = `{"context": "vessels.self","subscribe":${JSON.stringify(subscriptionPaths)}}`
-  // wsLog(subscriptionMessage); // --
+  wsLog(subscriptionMessage);
 
   this.ws.on('open', function open() {
     platform.ws.send(subscriptionMessage);
@@ -1210,19 +1214,23 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
 
     if ( _.hasIn(message, 'updates') ) {
       latestUpdate = _.last(message.updates)  // We want to update to last status only
-      latestValue = _.last(latestUpdate.values)
-      valuePath = latestValue.path
-      valueValue = latestValue.value
+      if ( _.hasIn(latestUpdate, 'values') ) {
+        latestValue = _.last(latestUpdate.values)
+        valuePath = latestValue.path
+        valueValue = latestValue.value
 
-      targetList = platform.updateSubscriptions.get(valuePath)
-      targetList.forEach(target => {
-        wsLog('Updating value:', valuePath, '>', target.characteristic.displayName, '|', valueValue, '>', target.conversion(valueValue), '|', target.conversion);
-        target.characteristic.updateValue(target.conversion(valueValue));
-      })
-    } else {
+        targetList = platform.updateSubscriptions.get(valuePath)
+        targetList.forEach(target => {
+          wsLog('Updating value:', valuePath, '>', target.characteristic.displayName, '|', valueValue, '>', target.conversion(valueValue), '|', target.conversion);
+          target.characteristic.updateValue(target.conversion(valueValue));
+        })
+      } else {
+        wsLog('Skipping update without values:', data);
+      }
+    } else if ( _.hasIn(message, 'name') ) {
       platform.log('websocket Welcome message recieved');
+    } else {
+      platform.log('websocket Unexpected message recieved:', data);
     }
-
   });
-
 };
