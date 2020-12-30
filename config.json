@@ -21,6 +21,10 @@
       "ssl": false,
       "securityToken": "your.signalk.token.here",
 
+      "removeDevicesNotPresent": false,
+      "signalkInitializeDelay": "10000",
+      "autodetectNewAccessoriesInterval": "900000",
+
       "emptyBatteryVoltage" : "22.0",
       "lowBatteryVoltage" : "23.5",
       "fullBatteryVoltage" : "26.0",
@@ -33,8 +37,6 @@
       "lowLiveWellLevel" : "50.0",
       "lowGasLevel" : "50.0",
       "lowBallastLevel" : "50.0",
-
-      "removeDevicesNotPresent": false,
 
       "ignoredPaths": [
         "tanks.wasteWater.0",

@@ -11,7 +11,7 @@ var Accessory, Service, Characteristic, UUIDGen;
 const urlPath = 'signalk/v1/api/vessels/self/'
 const wsPath = 'signalk/v1/stream?subscribe=none' // none will stream only the heartbeat, until the client issues subscribe messages in the WebSocket stream
 
-const defaultAutodetectNewAccessoriesDelay = 10000 // Delay of first autodetecting new devices to give Signal K time to build API tree (in milliseconds)
+const defaultsignalkInitializeDelay = 10000 // Delay before adding or removing devices to give Signal K time to build API tree (in milliseconds)
 const defaultAutodetectNewAccessoriesInterval = 15 * 60 * 1000 // Interval to check for new devices (in milliseconds)
 
 // EmpirBus NXT + Venus GX switches and dimmer
@@ -133,7 +133,7 @@ function SignalKPlatform(log, config, api) {
   this.ws = new websocket(this.wsl, "ws", wsOptions);
   this.wsInitiated = false;
 
-  this.autodetectNewAccessoriesDelay = Number(config.autodetectNewAccessoriesDelay) || defaultAutodetectNewAccessoriesDelay;
+  this.signalkInitializeDelay = Number(config.signalkInitializeDelay) || defaultsignalkInitializeDelay;
   this.autodetectNewAccessoriesInterval = Number(config.autodetectNewAccessoriesInterval) || defaultAutodetectNewAccessoriesInterval;
 
   this.emptyBatteryVoltage = Number(config.emptyBatteryVoltage) || defaultEmptyBatteryVoltage;
@@ -204,32 +204,31 @@ function SignalKPlatform(log, config, api) {
       this.api.on('didFinishLaunching', function() {
         platform.log("Did finish launching");
 
-        // Remove not reachable accessories: cached accessories no more present in Signal K
-        // FIXME: removeAccessory() has a potential race condition with InitiateWebSocket()
-        platform.log("Checking for ignored or unreachable devices");
-        platform.accessories.forEach((accessory, key, map) => {
-          if (!this.noignoredPath(accessory.context.path)) {
-            platform.log('Ignore Accessory', accessory.displayName);
-            platform.removeAccessory(accessory);
-          } else if (config.removeDevicesNotPresent) {
-            platform.checkKey(accessory.context.path, (error, result) => {
-              if (error && result == 'N/A') {
-                platform.log('Not Present Accessory', accessory.displayName);
-                platform.removeAccessory(accessory);
-              }
-            })
-          }
-        });
-
-        // Check Reachability after Signal K API tree has initialized
-        setTimeout(platform.updateAccessoriesReachability.bind(this), platform.autodetectNewAccessoriesDelay);
+        // Remove ignored cached accessories
+        if (this.config.ignoredPaths) {
+          platform.log("Checking for",this.config.ignoredPaths.length,"ignored devices");
+          this.config.ignoredPaths.forEach((path, key, map) => {
+            if (platform.accessories.has(path)) {
+              platform.log('Found ignored Accessory', platform.accessories.get(path).displayName);
+              platform.removeAccessory(platform.accessories.get(path));
+            }
+          })
+        };
 
         // Start accessories value updating
         platform.InitiateWebSocket()
         this.wsInitiated = true;
 
-        // Initally add new accessories in Signal K
-        setTimeout(platform.autodetectNewAccessories.bind(this), platform.autodetectNewAccessoriesDelay);
+        // Check Reachability after Signal K API tree has initialized
+        setTimeout(platform.updateAccessoriesReachability.bind(this), platform.signalkInitializeDelay);
+
+        // Remove unreachable accessories after Signal K API tree has initialized
+        if (this.config.removeDevicesNotPresent) {
+          setTimeout(platform.removeAccessoriesNotPresent.bind(this), platform.signalkInitializeDelay);
+        };
+
+        // Initally add new accessories after Signal K API tree has initialized
+        setTimeout(platform.autodetectNewAccessories.bind(this), platform.signalkInitializeDelay);
 
         // Periodically check for new accessories in Signal K
         setInterval(platform.autodetectNewAccessories.bind(this), platform.autodetectNewAccessoriesInterval);
@@ -831,10 +830,24 @@ SignalKPlatform.prototype.addLeakServices = function(accessory) {
 
 
 SignalKPlatform.prototype.updateAccessoriesReachability = function() {
-  this.log("Update Reachability");
+  this.log("Update reachability");
   for (var accessory in this.accessories) {
     accessory.updateReachability(false);
   }
+}
+
+SignalKPlatform.prototype.removeAccessoriesNotPresent = function() {
+  // Remove not reachable accessories: cached accessories no more present in Signal K
+  // FIXME: removeAccessory() has a potential race condition with InitiateWebSocket()
+  this.log("Remove unreachable devices");
+  this.accessories.forEach((accessory, key, map) => {
+    this.checkKey(accessory.context.path, (error, result) => {
+      if (error && result == 'N/A') {
+        this.log('Found not present Accessory', accessory.displayName);
+        this.removeAccessory(accessory);
+      }
+    })
+  });
 }
 
 // Remove accessory

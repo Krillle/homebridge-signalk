@@ -101,7 +101,7 @@ The plugin awaits and accepts the following settings in the Homebridge `config.j
 `"ssl": false` Set to `true` if Signal K server is awaiting connections via SSL  
 `"securityToken": "your.signalk.token.here"` Signal K server security token (usually needed for write access)  
 
-`"autodetectNewAccessoriesDelay": "10000"` Delay of first autodetecting new devices to give Signal K time to build API tree (in milliseconds)  
+`"signalKInitializeDelay": "10000"` Delay before adding or removing devices to give Signal K time to build API tree (in milliseconds)  
 `"autodetectNewAccessoriesInterval": "900000"` Interval to check for new devices (in milliseconds)  
 
 `"emptyBatteryVoltage" : "22.0"` Battery SOC shown as 0% (ignored if SOC is reported from battery itself)  
