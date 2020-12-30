@@ -1,5 +1,8 @@
 ## Change Log
 
+### v1.1.1 (2020/12/30 17:20)
+- fix: delay removing not present devices to give Signal K time to fill API tree
+
 ### v1.1.0 (2020/12/30 01:40)
 - feature: update reachability of devices after 10 seconds to give Signal K time to build API tree
 - feature: delay first autodetect new devices for 10 seconds to give Signal K time to build API tree
