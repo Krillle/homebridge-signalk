@@ -99,10 +99,10 @@ The plugin awaits and accepts the following settings in the Homebridge `config.j
 ### Optional parameters and their default values if omitted:
 `"name" : "NameOfVessel"`  
 `"ssl": false` Set to `true` if Signal K server is awaiting connections via SSL  
-`"securityToken": "your.signalk.token.here"` Signal K server security token (usually needed for write access)
+`"securityToken": "your.signalk.token.here"` Signal K server security token (usually needed for write access)  
 
-`"autodetectNewAccessoriesDelay": "10000"` Delay of first autodetecting new devices to give Signal K time to build API tree (in milliseconds)
-`"autodetectNewAccessoriesInterval": "900000"` Interval to check for new devices (in milliseconds)
+`"autodetectNewAccessoriesDelay": "10000"` Delay of first autodetecting new devices to give Signal K time to build API tree (in milliseconds)  
+`"autodetectNewAccessoriesInterval": "900000"` Interval to check for new devices (in milliseconds)  
 
 `"emptyBatteryVoltage" : "22.0"` Battery SOC shown as 0% (ignored if SOC is reported from battery itself)  
 `"lowBatteryVoltage" : "23.5"` Low battery warning if battery voltage is at or below  
@@ -117,7 +117,7 @@ The plugin awaits and accepts the following settings in the Homebridge `config.j
 `"lowGasLevel" : "50.0"` Low tank (battery) warning if tank level is at or below  
 `"lowBallastLevel" : "50.0"` Low tank (battery) warning if tank level is at or below  
 
-`"removeDevicesNotPresent": false` If set to `true` devices which are not present in API keys (after restart of Signal K server) are removed from HomeKit (at start of Homebridge server). Set to `false` to prevent devices disappearing after rebooting Raspberry Pi in case homebridge loads faster than the Signal K tree is filled.
+`"removeDevicesNotPresent": false` If set to `true` devices which are not present in API keys (after restart of Signal K server) are removed from HomeKit (at start of Homebridge server). Set to `false` to prevent devices disappearing after rebooting Raspberry Pi in case homebridge loads faster than the Signal K tree is filled.  
 
 `"ignoredPaths": ["key","key"]` List of API keys for which you don't want to have a device in HomeKit. Devices will be deleted from HomeKit if already present.  
 
