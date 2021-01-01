@@ -1,7 +1,7 @@
 ## Change Log
 
 ### v1.2.0 (2021/01/01 23:00)
-- feature: generic switch for any API key /electrical/switches/<identifier>/state
+- feature: generic switch for any API key /electrical/switches/\<identifier\>/state
 - feature: process Venus GX meta data
 - fix: catch error caused by missing meta API keys
 - fix: catch error caused by updates for unknown devices
