@@ -1,5 +1,10 @@
 ## Change Log
 
+### v1.2.0 (2021/01/01 23:00)
+- feature: generic switch for any API key /electrical/switches/<identifier>/state
+- fix: catch error caused by missing meta API keys
+- fix: catch error cause by updates for unknown devices 
+
 ### v1.1.1 (2020/12/30 17:20)
 - fix: delay removing not present devices to give Signal K time to fill API tree
 

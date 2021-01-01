@@ -895,49 +895,55 @@ SignalKPlatform.prototype.processFullTree = function(body) {
   var tree = JSON.parse(body);
 
   // Add electrical controls: EmpirBus NXT and Venus GX
-  this.log("Adding electrical controls (EmpirBus NXT and Venus GX)");
+  this.log("Adding electrical controls (EmpirBus NXT, Venus GX and generic)");
   var controls = _.get(tree, controlsPath);
   if ( controls ) {
     _.keys(controls).forEach(device => {
+      if (this.noignoredPath(`${controlsPath}.${device}`)
+            && !this.accessories.has(`${controlsPath}.${device}`)) {
+        if (device.slice(0,empirBusIdentifier.length) == empirBusIdentifier) {
+          httpLog(`Preparing EmpirBus NXT device: ${device} \n %O`, controls[device]);
+          var path = `${controlsPath}.${device}`;
+          var fallbackName = ((controls[device].meta||{}).displayName||{}).value || (controls[device].name||{}).value || device;
+          var displayName = this.getName(path, fallbackName);
+          var deviceType = this.getDeviceType(`${controlsPath}.${device}`) || (controls[device].type||{}).value || "switch";
+          var manufacturer = (((controls[device].meta||{}).manufacturer||{}).name||{}).value || "EmpirBus";
+          var model = (((controls[device].meta||{}).manufacturer||{}).model||{}).value || "NXT DCM";
+          var serialnumber = (controls[device].name||{}).value || device;
 
-      if (device.slice(0,empirBusIdentifier.length) == empirBusIdentifier
-            && this.noignoredPath(`${controlsPath}.${device}`)
-            && !this.accessories.has(`${controlsPath}.${device}`) ) {
-        httpLog(`Preparing EmpirBus NXT device: ${device} \n %O`, controls[device]);
-        var path = `${controlsPath}.${device}`;
-        var fallbackName = controls[device].meta.displayName ? controls[device].meta.displayName.value : controls[device].name.value;
-        var displayName = this.getName(path, fallbackName);
-        var deviceType = this.getDeviceType(`${controlsPath}.${device}`) || controls[device].type.value;
-        var manufacturer = controls[device].meta.manufacturer.name.value || "EmpirBus";
-        var model = controls[device].meta.manufacturer.model.value || "NXT DCM";
+          // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
+          httpLog(`Adding EmpirBus NXT device: \n accessoryName: ${displayName}, identifier: ${device}, path: ${path} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${serialnumber} \n categoryPath: ${controlsPath}, deviceType: ${deviceType}`);
+          this.addAccessory(displayName, device, path, manufacturer, model, serialnumber, controlsPath, deviceType);
+        } else
+        if (device.slice(0,venusRelaisIdentifier.length) == venusRelaisIdentifier) {
+          httpLog(`Preparing Venus GX device: ${device} \n %O`, controls[device]);
+          var path = `${controlsPath}.${device}`;
+          var fallbackName = ((controls[device].meta||{}).displayName||{}).value || (controls[device].name||{}).value || device;
+          var displayName = this.getName(path, fallbackName);
+          var deviceType = "switch";
+          var manufacturer = (((controls[device].meta||{}).manufacturer||{}).name||{}).value || "Victron Energy";
+          var model = (((controls[device].meta||{}).manufacturer||{}).model||{}).value || "Venus GX";
 
-        // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
-        httpLog(`Adding EmpirBus NXT device: \n accessoryName: ${displayName}, identifier: ${device}, path: ${path} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${controls[device].name.value} \n categoryPath: ${controlsPath}, deviceType: ${deviceType}`);
-        this.addAccessory(displayName, device, path, manufacturer, model, controls[device].name.value, controlsPath, deviceType);
-      } else
-      if (device.slice(0,venusRelaisIdentifier.length) == venusRelaisIdentifier
-            && this.noignoredPath(`${controlsPath}.${device}`)
-            && !this.accessories.has(`${controlsPath}.${device}`) ) {
+          // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
+          httpLog(`Adding Venus GX device: \n accessoryName: ${displayName}, identifier: ${device}, path: ${path} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${device} \n categoryPath: ${controlsPath}, deviceType: ${deviceType}`);
+          this.addAccessory(displayName, device, path, manufacturer, model, device, controlsPath, deviceType);
+        } else
+        if (controls[device].state) { // Device is considered a switch if it has electrical.switches.<indentifier>.state
+          httpLog(`Preparing generic device: ${device} \n %O`, controls[device]);
+          var path = `${controlsPath}.${device}`;
+          var fallbackName = ((controls[device].meta||{}).displayName||{}).value || (controls[device].name||{}).value || device;
+          var displayName = this.getName(path, fallbackName);
+          var deviceType = "switch";
+          var manufacturer = (((controls[device].meta||{}).manufacturer||{}).name||{}).value || "Unkown";
+          var model = (((controls[device].meta||{}).manufacturer||{}).model||{}).value || "Generic Switch";
 
-        httpLog(`Preparing Venus GX device: ${device} \n %O`, controls[device]);
-        var path = `${controlsPath}.${device}`;
-        var fallbackName = device; // FIXME: catch error in case of missing Metadata: controls[device].meta.displayName ? (controls[device].meta.displayName.value ? controls[device].meta.displayName.value : controls[device].meta.displayName) : controls[device].name.value;
-        var displayName = this.getName(path, fallbackName);
-        var deviceType = "switch";
-        var manufacturer = "Victron Energy"; // FIXME: catch error in case of missing Metadata: _.get(controls[device], "meta.manufacturer.name.value") || "Victron Energy";
-        var model = "Venus GX"; // FIXME: catch error in case of missing Metadata: _.get(controls[device], "meta.manufacturer.model.value") || "Venus GX";
-
-        if ( !fallbackName ) {
-          let parts = device.split('.')
-          fallbackName = parts[parts.length-1]
+          // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
+          httpLog(`Adding generic device: \n accessoryName: ${displayName}, identifier: ${device}, path: ${path} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${device} \n categoryPath: ${controlsPath}, deviceType: ${deviceType}`);
+          this.addAccessory(displayName, device, path, manufacturer, model, device, controlsPath, deviceType);
         }
-
-        // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
-        httpLog(`Adding Venus GX device: \n accessoryName: ${displayName}, identifier: ${device}, path: ${path} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${device} \n categoryPath: ${controlsPath}, deviceType: ${deviceType}`);
-        this.addAccessory(displayName, device, path, manufacturer, model, device, controlsPath, deviceType);
       }
-    });
-  }
+    })
+  };
   this.log('Done');
 
   // Add environments
@@ -1233,10 +1239,15 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
         valueValue = latestValue.value
 
         targetList = platform.updateSubscriptions.get(valuePath)
-        targetList.forEach(target => {
-          wsLog('Updating value:', valuePath, '>', target.characteristic.displayName, '|', valueValue, '>', target.conversion(valueValue), '|', target.conversion);
-          target.characteristic.updateValue(target.conversion(valueValue));
-        })
+        if (targetList) {
+          targetList.forEach(target => {
+            wsLog('Updating value:', valuePath, '>', target.characteristic.displayName, '|', valueValue, '>', target.conversion(valueValue), '|', target.conversion);
+            target.characteristic.updateValue(target.conversion(valueValue));
+          })
+        } else {
+          wsLog('Skipping update with values for unknown device:', data);
+          platform.log('Skipping update with values for unknown device:', data);
+        }
       } else {
         wsLog('Skipping update without values:', data);
       }
