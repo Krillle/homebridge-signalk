@@ -1246,7 +1246,6 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
           })
         } else {
           wsLog('Skipping update with values for unknown device:', data);
-          platform.log('Skipping update with values for unknown device:', data);
         }
       } else {
         wsLog('Skipping update without values:', data);
