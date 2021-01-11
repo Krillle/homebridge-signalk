@@ -1,5 +1,8 @@
 ## Change Log
 
+### v1.2.1 (2021/01/12 00:30)
+- fix: catch potential Signal K websocket and http errors
+
 ### v1.2.0 (2021/01/01 23:00)
 - feature: generic switch for any API key /electrical/switches/\<identifier\>/state
 - feature: process Venus GX meta data
