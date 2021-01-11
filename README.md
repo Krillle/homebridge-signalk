@@ -1,4 +1,7 @@
-# homebridge-signalk
+# Homebridge Signal K
+<a href="https://www.npmjs.com/package/homebridge-signalk"><img title="npm version" src="https://badgen.net/npm/v/homebridge-signalk" ></a>
+<a href="https://www.npmjs.com/package/homebridge-signalk"><img title="npm downloads" src="https://badgen.net/npm/dt/homebridge-signalk"></a>
+
 <img src="media/signalk-homekit.png" align="right" alt="Signak K in Home App">
 
 This is a plugin for the Homebridge server, which maps API keys of a Signal K server to matching [HomeKit](https://www.apple.com/ios/home/) devices.

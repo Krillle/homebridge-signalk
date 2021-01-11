@@ -131,7 +131,6 @@ function SignalKPlatform(log, config, api) {
     this.securityToken = config.securityToken
   }
   this.ws = new websocket(this.wsl, "ws", wsOptions);
-  this.wsInitiated = false;
 
   this.signalkInitializeDelay = Number(config.signalkInitializeDelay) || defaultsignalkInitializeDelay;
   this.autodetectNewAccessoriesInterval = Number(config.autodetectNewAccessoriesInterval) || defaultAutodetectNewAccessoriesInterval;
@@ -217,7 +216,6 @@ function SignalKPlatform(log, config, api) {
 
         // Start accessories value updating
         platform.InitiateWebSocket()
-        this.wsInitiated = true;
 
         // Check Reachability after Signal K API tree has initialized
         setTimeout(platform.updateAccessoriesReachability.bind(this), platform.signalkInitializeDelay);
@@ -514,7 +512,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
-  if (this.wsInitiated) {
+  if (this.ws.readyState === websocket.OPEN) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
     accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   };
@@ -538,7 +536,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
-  if (this.wsInitiated) {
+  if (this.ws.readyState === websocket.OPEN) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
     accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   };
@@ -568,7 +566,7 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
-  if (this.wsInitiated) {
+  if (this.ws.readyState === websocket.OPEN) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
     accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   };
@@ -590,7 +588,7 @@ SignalKPlatform.prototype.addTemperatureServices = function(accessory) {
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(accessory.context.path, subscriptionList);
-  if (this.wsInitiated) {
+  if (this.ws.readyState === websocket.OPEN) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${accessory.context.path}"}]}`)
     accessory.context.subscriptions.push(accessory.context.path)  // Link from accessory to subscription
   };
@@ -612,7 +610,7 @@ SignalKPlatform.prototype.addHumidityServices = function(accessory) {
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(accessory.context.path, subscriptionList);
-  if (this.wsInitiated) {
+  if (this.ws.readyState === websocket.OPEN) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${accessory.context.path}"}]}`)
     accessory.context.subscriptions.push(accessory.context.path)  // Link from accessory to subscription
   };
@@ -653,7 +651,7 @@ SignalKPlatform.prototype.addTankServices = function(accessory) {
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
-  if (this.wsInitiated) {
+  if (this.ws.readyState === websocket.OPEN) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
     accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   };
@@ -703,7 +701,7 @@ SignalKPlatform.prototype.addVoltageBatteryServices = function(accessory) {
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
-  if (this.wsInitiated) {
+  if (this.ws.readyState === websocket.OPEN) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
     accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   };
@@ -720,7 +718,7 @@ SignalKPlatform.prototype.addVoltageBatteryServices = function(accessory) {
   // subscriptionList.push(subscription)
   //
   // this.updateSubscriptions.set(dataPath, subscriptionList);
-  // if (this.wsInitiated) {
+  // if (this.ws.readyState === websocket.OPEN) {
   //   this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
   //   accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   // };
@@ -753,7 +751,7 @@ SignalKPlatform.prototype.addSOCBatteryServices = function(accessory) {
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
-  if (this.wsInitiated) {
+  if (this.ws.readyState === websocket.OPEN) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
     accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   };
@@ -771,7 +769,7 @@ SignalKPlatform.prototype.addSOCBatteryServices = function(accessory) {
   // subscriptionList.push(subscription)
   //
   // this.updateSubscriptions.set(dataPath, subscriptionList);
-  // if (this.wsInitiated) {
+  // if (this.ws.readyState === websocket.OPEN) {
   //   this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
   //   accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   // };
@@ -799,7 +797,7 @@ SignalKPlatform.prototype.addSOCBatteryServices = function(accessory) {
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
-  if (this.wsInitiated) {
+  if (this.ws.readyState === websocket.OPEN) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
     accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   };
@@ -822,7 +820,7 @@ SignalKPlatform.prototype.addLeakServices = function(accessory) {
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
-  if (this.wsInitiated) {
+  if (this.ws.readyState === websocket.OPEN) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
     accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   };
@@ -880,9 +878,9 @@ SignalKPlatform.prototype.autodetectNewAccessories = function() {
            headers: headers},
           (error, response, body) => {
             if ( error ) {
-              this.log(`error: ${error}`);
+              this.log('Signal K error:',error.message,'(Check Signal K server and restart Homebridge)');
             } else if ( response.statusCode != 200 ) {
-              this.log(`error: response code ${response.statusCode}`)
+              this.log('Signal K error unexpected response: response code',response.statusCode)
             } else {
               this.processFullTree(body);
             }
@@ -1225,6 +1223,10 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
   this.ws.on('open', function open() {
     platform.ws.send(subscriptionMessage);
     platform.log('websocket Subscription message sent');
+  });
+
+  this.ws.on('error', function wserror(e) {
+    platform.log('websocket Error:',e.message,'(Check Signal K server and restart Homebridge)');
   });
 
   this.ws.on('message', function incoming(data) {
