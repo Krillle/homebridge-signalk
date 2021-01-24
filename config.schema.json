@@ -1,7 +1,7 @@
 {
     "pluginAlias": "SignalK",
     "pluginType": "platform",
-    "singular": false,
+    "singular": true,
     "headerDisplay": "This plugin maps [API keys of a Signal K server](https://github.com/Krillle/homebridge-signalk/blob/master/README.md#mapped-api-keys-and-devices) to matching HomeKit devices.",
     "footerDisplay": "For help or in case of issues please visit the [GitHub repository](https://github.com/Krillle/homebridge-signalk/issues).",
     "schema": {
@@ -22,7 +22,7 @@
                 "description": "Check if Signal K server is awaiting connections via SSL"
             },
              "securityToken": {
-                "title": "Signal K security Token",
+                "title": "Signal K security token",
                 "type": "string",
                 "required": false,
                 "description": "Signal K server security token if any (usually needed for write access)"
@@ -78,7 +78,7 @@
                 "placeholder": 25,
                 "minimum": 0,
                 "maximum": 100,
-                "description": "Percent level below wich fresh water tanks will shown a batteries"
+                "description": "Percent level below wich fresh water tanks will shown a warning"
             },
             "highWasteWaterLevel": {
                 "title": "Waster Water High Level",
@@ -137,7 +137,7 @@
                 "description": "Percent level below wich ballast tanks will shown a warning"
             },
             "ignoredPaths": {
-                "title": "Ignored API Paths",
+              "title": "Ignored API Keys",
                 "type": "array",
                 "description": "Signal K API keys for which you don't want to see a device in HomeKit. Associated devices will be deleted from HomeKit if already present.",
                 "items": {
@@ -149,5 +149,52 @@
         }
     },
     "form": null,
-    "display": null
+    "display": null,
+    "layout": [
+      {
+        "type": "flex",
+        "flex-flow": "row wrap",
+        "items": ["host","ssl","securityToken"]
+      },
+      {
+        "type": "fieldset",
+        "title": "Optional Configuration",
+        "expandable": true,
+        "items": [
+          "removeDevicesNotPresent",
+          "signalkInitializeDelay",
+          "autodetectNewAccessoriesInterval",
+          "emptyBatteryVoltage",
+          "fullBatteryVoltage",
+          "lowBatteryVoltage",
+          "chargingBatteryVoltage",
+          "lowFreshWaterLevel",
+          "highWasteWaterLevel",
+          "highBlackWaterLevel",
+          "lowFuelLevel",
+          "lowLubricationLevel",
+          "lowLiveWellLevel",
+          "lowGasLevel",
+          "lowBallastLevel"
+        ]
+      },
+      {
+        "key": "ignoredPaths",
+        "expandable": true,
+        "type": "array",
+        "items": [
+          {
+            "type": "div",
+            "displayFlex": true,
+            "flex-direction": "row",
+            "items": [
+              {
+                "key": "ignoredPaths[]",
+                "placeholder": "e.g. tanks.wasteWater.0"
+              }
+            ]
+          }
+        ]
+      }
+    ]
 }
