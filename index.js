@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const fs = require('fs');
 var httpLog = require('debug')('homebridge-signalk:http');
 var wsLog = require('debug')('homebridge-signalk:websocket');
 var request = require('request');
@@ -10,6 +11,9 @@ var Accessory, Service, Characteristic, UUIDGen;
 
 const urlPath = 'signalk/v1/api/vessels/self/'
 const wsPath = 'signalk/v1/stream?subscribe=none' // none will stream only the heartbeat, until the client issues subscribe messages in the WebSocket stream
+
+const accessPath = 'signalk/v1/access/requests'
+const requestPath = 'signalk/v1/requests'
 
 const defaultsignalkInitializeDelay = 10000 // Delay before adding or removing devices to give Signal K time to build API tree (in milliseconds)
 const defaultAutodetectNewAccessoriesInterval = 15 * 60 * 1000 // Interval to check for new devices (in milliseconds)
@@ -202,6 +206,8 @@ function SignalKPlatform(log, config, api) {
       // Or start discover new accessories.
       this.api.on('didFinishLaunching', function() {
         platform.log("Did finish launching");
+
+        platform.setSecurityToken('This is my securityToken!');
 
         // Remove ignored cached accessories
         if (this.config.ignoredPaths) {
@@ -1063,7 +1069,30 @@ SignalKPlatform.prototype.processFullTree = function(body) {
   this.log('Done');
 }
 
-// - - - - - - - Helper functions - - - - - - - - - - - - - - - - - - - -
+// Saves the Signal K security token to config.json
+SignalKPlatform.prototype.setSecurityToken = function(securityToken) {
+  // load in the current config
+  const currentConfig = JSON.parse(fs.readFileSync(this.api.user.configPath(), 'utf8'));
+  // check the platforms section is an array before we do array things on it
+  if (!Array.isArray(currentConfig.platforms)) {
+    this.log('Failed to save Security Token to Homebridge config.json: Platforms is not array');
+    return;
+  }
+  // find this plugins current config
+  const pluginConfig = currentConfig.platforms.find( x => x.platform === this.config.platform);
+  if (!pluginConfig) {
+    this.log(`Failed to save Security Token to Homebridge config.json: No config for ${this.config.platform} in platforms`);
+    return;
+  }
+
+  pluginConfig.securityToken = securityToken;
+
+  // save the config, ensuring we maintain pretty json
+  fs.writeFileSync(this.api.user.configPath(), JSON.stringify(currentConfig, null, 4));
+  this.log('Security Token has been saved to Homebridge config.json');
+}
+
+// - - - - - - - config.json Helper functions - - - - - - - - - - - - - -
 
 // Returns a potential displayName from config.json
 SignalKPlatform.prototype.getName = function(path, defaultName) {
