@@ -8,24 +8,24 @@
         "type": "object",
         "properties": {
             "host": {
-                "title": "Signal K host",
+                "title": "Signal K Host",
                 "type": "string",
                 "default": "127.0.0.1:3000",
                 "required": true,
                 "description": "Hostname or IP address and port of your Signal K server"
             },
             "ssl": {
-                "title": "Signal K host uses SSL",
+                "title": "Signal K Host Uses SSL",
                 "type": "boolean",
                 "default": true,
                 "required": true,
                 "description": "Check if Signal K server is awaiting connections via SSL"
             },
              "securityToken": {
-                "title": "Signal K security token",
+                "title": "Signal K Security Token",
                 "type": "string",
                 "required": false,
-                "description": "Signal K server security token if any (usually needed for write access)"
+                "description": "Token needed to operate switches or dimmers. Genreate token with signalk-generate-token."
             },
 
             "removeDevicesNotPresent": {
