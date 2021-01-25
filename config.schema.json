@@ -17,7 +17,7 @@
             "ssl": {
                 "title": "Signal K Host Uses SSL",
                 "type": "boolean",
-                "default": true,
+                "default": false,
                 "required": true,
                 "description": "Check if Signal K server is awaiting connections via SSL"
             },
@@ -152,8 +152,6 @@
     "display": null,
     "layout": [
       {
-        "type": "flex",
-        "flex-flow": "row wrap",
         "items": ["host","ssl","securityToken"]
       },
       {

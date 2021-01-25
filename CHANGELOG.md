@@ -1,5 +1,8 @@
 ## Change Log
 
+### v1.2.3 (2021/01/26 00:30)
+- chore: smaller text changes
+
 ### v1.2.2 (2021/01/24 23:20)
 - fix: collapsed configuration in Homebridge UI
 
