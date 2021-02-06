@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://github.com/homebridge/homebridge/wiki/Verified-Plugins"><img alt="Homebridge Verified" src="media/Homebridge_x_SignalK.svg?sanitize=true" width="500px"></a>
+  <a href="https://github.com/homebridge/homebridge/wiki/Verified-Plugins"><img alt="Homebridge Verified" src="media/homebridge_x_signalk.svg?sanitize=true" width="500px"></a>
 </p>
 
 # Homebridge Signal K
