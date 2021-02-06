@@ -1,5 +1,8 @@
 ## Change Log
 
+### v1.2.4 (2021/02/06 14:30)
+- chore: Homebridge verified status
+
 ### v1.2.3 (2021/01/26 00:30)
 - chore: smaller text changes
 

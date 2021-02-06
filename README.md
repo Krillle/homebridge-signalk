@@ -1,6 +1,11 @@
+<p align="center">
+  <a href="https://github.com/homebridge/homebridge/wiki/Verified-Plugins"><img alt="Homebridge Verified" src="media/Homebridge_x_SignalK.svg?sanitize=true" width="500px"></a>
+</p>
+
 # Homebridge Signal K
-<a href="https://www.npmjs.com/package/homebridge-signalk"><img title="npm version" src="https://badgen.net/npm/v/homebridge-signalk" ></a>
-<a href="https://www.npmjs.com/package/homebridge-signalk"><img title="npm downloads" src="https://badgen.net/npm/dt/homebridge-signalk"></a>
+[![npm-version](https://badgen.net/npm/v/homebridge-signalk)](https://www.npmjs.com/package/homebridge-signalk)
+[![npm-downloads](https://badgen.net/npm/dt/homebridge-signalk)](https://www.npmjs.com/package/homebridge-signalk)
+[![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
 
 <img src="media/signalk-homekit.png" align="right" alt="Signak K in Home App">
 
