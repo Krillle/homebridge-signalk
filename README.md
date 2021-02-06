@@ -16,7 +16,7 @@ Use this plugin to read and in case of switches and dimmers even control your bo
 ## General Prerequisites:
 The plugin fills the gap between Homebridge and Signal K, so you need both up and running:
 - [Signal K server](https://www.npmjs.com/package/signalk-server)
-- [Homebridge server](https://www.npmjs.com/package/homebridge)
+- [Homebridge server](https://homebridge.io)
 
 
 ## Mapped API keys and devices:

@@ -1,6 +1,6 @@
 ## Change Log
 
-### v1.2.4 (2021/02/06 14:30)
+### v1.2.4 (2021/02/06 15:00)
 - chore: Homebridge verified status
 
 ### v1.2.3 (2021/01/26 00:30)
