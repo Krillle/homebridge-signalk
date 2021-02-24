@@ -140,11 +140,10 @@ function SignalKPlatform(log, config, api) {
   this.fullBatteryVoltage = Number(config.fullBatteryVoltage) || defaultFullBatteryVoltage;
   this.chargingBatteryVoltage = Number(config.chargingBatteryVoltage) || defaultChargingBatteryVoltage;
 
-  // this.batteryStateOfCharge = {
-  //   (voltage) =>  (Number(voltage) - this.emptyBatteryVoltage) / (this.fullBatteryVoltage - this.emptyBatteryVoltage) * 100
-  // }
+  this.percent = (body) => Number(body) * 100;
 
-  this.batteryWarnCondition = {
+  this.batteryCondition = {
+    soc : (voltage) => Math.min((Number(voltage) - this.emptyBatteryVoltage) / (this.fullBatteryVoltage - this.emptyBatteryVoltage) * 100, 100),
     low : (voltage) =>  Number(voltage) <= this.lowBatteryVoltage,
     charging : (voltage) =>  Number(voltage) >= this.chargingBatteryVoltage
   }
@@ -442,8 +441,7 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
       this.addHumidityServices(newAccessory);
       break;
     case 'tank':
-      // newAccessory.addService(Service.LeakSensor, accessoryName)
-      newAccessory.addService(Service.HumiditySensor, accessoryName) // Workaround to shoe tank level
+      newAccessory.addService(Service.HumiditySensor, accessoryName) // Workaround to show tank level
       newAccessory.addService(Service.BatteryService, accessoryName) // Used for low tank level warning
       this.addTankServices(newAccessory);
       break;
@@ -532,7 +530,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.Lightbulb).getCharacteristic(Characteristic.Brightness)
-  subscription.conversion = (body) =>  Number(body) * 100
+  subscription.conversion = this.percent
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
@@ -606,7 +604,7 @@ SignalKPlatform.prototype.addHumidityServices = function(accessory) {
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.HumiditySensor).getCharacteristic(Characteristic.CurrentRelativeHumidity)
-  subscription.conversion = (body) =>  Number(body) * 100
+  subscription.conversion = this.percent
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(accessory.context.path, subscriptionList);
@@ -629,12 +627,12 @@ SignalKPlatform.prototype.addTankServices = function(accessory) {
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.HumiditySensor).getCharacteristic(Characteristic.CurrentRelativeHumidity)
-  subscription.conversion = (body) =>  Number(body) * 100
+  subscription.conversion = this.percent
   subscriptionList.push(subscription)
 
   accessory.getService(Service.BatteryService)
   .getCharacteristic(Characteristic.StatusLowBattery)
-  .on('get', this.getStatusLowTank.bind(this, dataPath, this.tankWarnCondition[accessory.context.model]));
+  .on('get', this.getStatus.bind(this, dataPath, this.tankWarnCondition[accessory.context.model]));
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.StatusLowBattery)
@@ -647,7 +645,7 @@ SignalKPlatform.prototype.addTankServices = function(accessory) {
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.BatteryLevel)
-  subscription.conversion = (body) =>  Number(body) * 100
+  subscription.conversion = this.percent
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
@@ -666,38 +664,38 @@ SignalKPlatform.prototype.addVoltageBatteryServices = function(accessory) {
 
   accessory.getService(Service.HumiditySensor)   // Mapped to use humidity sensor to show SOC in Home app
   .getCharacteristic(Characteristic.CurrentRelativeHumidity)
-  .on('get', this.getRatio.bind(this, dataPath));
+  .on('get', this.getStatus.bind(this, dataPath, this.batteryCondition.soc));
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.HumiditySensor).getCharacteristic(Characteristic.CurrentRelativeHumidity)
-  subscription.conversion = (voltage) =>  (Number(voltage) - this.emptyBatteryVoltage) / (this.fullBatteryVoltage - this.emptyBatteryVoltage) * 100
+  subscription.conversion = this.batteryCondition.soc
   subscriptionList.push(subscription)
 
   accessory.getService(Service.BatteryService)
   .getCharacteristic(Characteristic.BatteryLevel)
-  .on('get', this.getRatio.bind(this, dataPath));
+  .on('get', this.getStatus.bind(this, dataPath, this.batteryCondition.soc));
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.BatteryLevel)
-  subscription.conversion = (voltage) =>  (Number(voltage) - this.emptyBatteryVoltage) / (this.fullBatteryVoltage - this.emptyBatteryVoltage) * 100
+  subscription.conversion = this.batteryCondition.soc
   subscriptionList.push(subscription)
 
   accessory.getService(Service.BatteryService)
   .getCharacteristic(Characteristic.StatusLowBattery)
-  .on('get', this.getStatusWarnBattery.bind(this, dataPath, this.batteryWarnCondition.low));
+  .on('get', this.getStatus.bind(this, dataPath, this.batteryCondition.low));
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.StatusLowBattery)
-  subscription.conversion = this.batteryWarnCondition.low
+  subscription.conversion = this.batteryCondition.low
   subscriptionList.push(subscription)
 
   accessory.getService(Service.BatteryService)
   .getCharacteristic(Characteristic.ChargingState)
-  .on('get', this.getStatusWarnBattery.bind(this, dataPath, this.batteryWarnCondition.charging));
+  .on('get', this.getStatus.bind(this, dataPath, this.batteryCondition.charging));
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.ChargingState)
-  subscription.conversion = this.batteryWarnCondition.charging
+  subscription.conversion = this.batteryCondition.charging
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
@@ -738,7 +736,7 @@ SignalKPlatform.prototype.addSOCBatteryServices = function(accessory) {
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.HumiditySensor).getCharacteristic(Characteristic.CurrentRelativeHumidity)
-  subscription.conversion = (body) =>  Number(body) * 100
+  subscription.conversion = this.percent
   subscriptionList.push(subscription)
 
   accessory.getService(Service.BatteryService)
@@ -747,7 +745,7 @@ SignalKPlatform.prototype.addSOCBatteryServices = function(accessory) {
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.BatteryLevel)
-  subscription.conversion = (body) =>  Number(body) * 100
+  subscription.conversion = this.percent
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
@@ -780,20 +778,20 @@ SignalKPlatform.prototype.addSOCBatteryServices = function(accessory) {
 
   accessory.getService(Service.BatteryService)
   .getCharacteristic(Characteristic.StatusLowBattery)
-  .on('get', this.getStatusWarnBattery.bind(this, dataPath, this.batteryWarnCondition.low));
+  .on('get', this.getStatus.bind(this, dataPath, this.batteryCondition.low));
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.StatusLowBattery)
-  subscription.conversion = this.batteryWarnCondition.low
+  subscription.conversion = this.batteryCondition.low
   subscriptionList.push(subscription)
 
   accessory.getService(Service.BatteryService)
   .getCharacteristic(Characteristic.ChargingState)
-  .on('get', this.getStatusWarnBattery.bind(this, dataPath, this.batteryWarnCondition.charging));
+  .on('get', this.getStatus.bind(this, dataPath, this.batteryCondition.charging));
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.ChargingState)
-  subscription.conversion = this.batteryWarnCondition.charging
+  subscription.conversion = this.batteryCondition.charging
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
@@ -1119,8 +1117,7 @@ SignalKPlatform.prototype.checkKey = function(path, callback) {
 
 // Returns the value for path in %
 SignalKPlatform.prototype.getRatio = function(path, callback) {
-  this.getValue(path + '.value', callback,
-                (body) =>  Number(body) * 100)
+  this.getValue(path + '.value', callback, this.percent)
 }
 
 // Returns the state of path as boolean
@@ -1150,12 +1147,8 @@ SignalKPlatform.prototype.getChargingState = function(path, callback)  {
                 })
 }
 
-SignalKPlatform.prototype.getStatusWarnBattery = function(path, batteryWarnCondition, callback) {
-  this.getValue(path + '.value', callback, batteryWarnCondition)
-}
-
-SignalKPlatform.prototype.getStatusLowTank = function(path, tankWarnCondition, callback) {
-  this.getValue(path + '.value', callback, tankWarnCondition)
+SignalKPlatform.prototype.getStatus = function(path, condition, callback) {
+  this.getValue(path + '.value', callback, condition)
 }
 
 // Writes value for path to Signal K API

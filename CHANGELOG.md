@@ -1,5 +1,9 @@
 ## Change Log
 
+### v1.2.5 (2021/02/25 00:15)
+- fix: humidity and battery level shall not exceed 100 in Homebridge 1.3
+- fix: fixed battery level calculation based on voltage
+
 ### v1.2.4 (2021/02/06 15:00)
 - chore: Homebridge verified status
 
