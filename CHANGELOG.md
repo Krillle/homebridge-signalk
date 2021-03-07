@@ -1,5 +1,9 @@
 ## Change Log
 
+### v1.3.0 (2021/03/08 00:45)
+- feature: add contact sensors for any API key
+- feature: battery charging state based on positive current value
+
 ### v1.2.5 (2021/02/25 00:15)
 - fix: humidity and battery level shall not exceed 100 in Homebridge 1.3
 - fix: fixed battery level calculation based on voltage

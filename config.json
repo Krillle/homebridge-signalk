@@ -38,6 +38,21 @@
       "lowGasLevel" : "50.0",
       "lowBallastLevel" : "50.0",
 
+      "contactSensors": [
+          {
+              "key": "electrical.batteries.0.current",
+              "name": "Landstrom",
+              "operator": ">",
+              "treshold": "1"
+          },
+          {
+              "key": "navigation.speedOverGround",
+              "name": "Unterwegs",
+              "operator": ">",
+              "treshold": "0.1"
+          }
+      ],
+
       "ignoredPaths": [
         "tanks.wasteWater.0",
 

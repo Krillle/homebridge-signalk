@@ -186,14 +186,44 @@ function SignalKPlatform(log, config, api) {
 
   // Contact sensors
   if (this.config.contactSensors ) {
+    var deviceConversion;
     this.config.contactSensors.forEach(device => {
+
+      device.treshold = device.treshold || 0;
+
+      switch (device.operator) {
+        case "==":
+          deviceConversion = (value) => value == device.treshold;
+          break;
+        case "!=":
+          deviceConversion = (value) => value != device.treshold;
+          break;
+        case "<":
+          deviceConversion = (value) => Number(value) < Number(device.treshold);
+          break;
+        case "<=":
+          deviceConversion = (value) => Number(value) <= Number(device.treshold);
+          break;
+        case ">=":
+          deviceConversion = (value) => Number(value) >= Number(device.treshold);
+          break;
+        // case "in":
+        //   deviceConversion = value => device.treshold.includes(value);
+        //   break;
+        default: // defaut is ">":
+          deviceConversion = (value) => Number(value) > Number(device.treshold);
+          break;
+      };
+
       contactSensors.set(device.key, { // Unique identifier for UUID
         'key' : device.key,
         'name': device.name,
         'operator' : device.operator || ">",
-        'treshold' : device.treshold || 0
+        'treshold' : device.treshold,
+        'conversion' : deviceConversion
       })
     });
+    // this.contactSensorCondition = (contactSensors.get(accessory.context.identifier) || {}).conversion // || (value) => false;
   };
 
 
@@ -846,38 +876,15 @@ SignalKPlatform.prototype.addContactServices = function(accessory) {
   const dataPath = accessory.context.path
   var subscriptionList = this.updateSubscriptions.get(dataPath) || [];
 
-  var condition = contactSensors.get(accessory.context.identifier) || {'operator' : '>=', treshold : 0} ;
-  switch (condition.operator) {
-    case "==":
-      deviceConversion = (value) => value == condition.treshold;
-      break;
-    case "!=":
-      deviceConversion = (value) => value != condition.treshold;
-      break;
-    case "<":
-      deviceConversion = (value) => Number(value) < Number(condition.treshold);
-      break;
-    case "<=":
-      deviceConversion = (value) => Number(value) <= Number(condition.treshold);
-      break;
-    case ">=":
-      deviceConversion = (value) => Number(value) >= Number(condition.treshold);
-      break;
-    // case "in":
-    //   deviceConversion = value => condition.treshold.includes(value);
-    //   break;
-    default: // defaut is ">":
-      deviceConversion = (value) => Number(value) > Number(condition.treshold);
-      break;
-  };
+  var conversion = (contactSensors.get(accessory.context.identifier) || {}).conversion  || ((value) => false);
 
   accessory.getService(Service.ContactSensor)
   .getCharacteristic(Characteristic.ContactSensorState)
-  .on('get', this.getStatus.bind(this, dataPath, deviceConversion))
+  .on('get', this.getStatus.bind(this, dataPath, conversion))
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.ContactSensor).getCharacteristic(Characteristic.ContactSensorState)
-  subscription.conversion = deviceConversion
+  subscription.conversion = conversion
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
@@ -902,7 +909,6 @@ SignalKPlatform.prototype.removeAccessoriesNotPresent = function() {
   this.accessories.forEach((accessory, key, map) => {
     this.checkKey(accessory.context.path, (error, result) => {
       if (error && result == 'N/A') {
-        this.log('Found not present accessory', accessory.displayName);
         this.removeAccessory(accessory);
       }
     })
@@ -960,11 +966,13 @@ SignalKPlatform.prototype.processFullTree = function(body) {
     _.keys(controls).forEach(device => {
       if (this.noignoredPath(`${controlsPath}.${device}`)
             && !this.accessories.has(`${controlsPath}.${device}`)) {
+
+        var path = `${controlsPath}.${device}`;
+        var fallbackName = ((controls[device].meta||{}).displayName||{}).value || (controls[device].name||{}).value || device;
+        var displayName = this.getName(path, fallbackName);
+
         if (device.slice(0,empirBusIdentifier.length) == empirBusIdentifier) {
           httpLog(`Preparing EmpirBus NXT device: ${device} \n %O`, controls[device]);
-          var path = `${controlsPath}.${device}`;
-          var fallbackName = ((controls[device].meta||{}).displayName||{}).value || (controls[device].name||{}).value || device;
-          var displayName = this.getName(path, fallbackName);
           var deviceType = this.getDeviceType(`${controlsPath}.${device}`) || (controls[device].type||{}).value || "switch";
           var manufacturer = (((controls[device].meta||{}).manufacturer||{}).name||{}).value || "EmpirBus";
           var model = (((controls[device].meta||{}).manufacturer||{}).model||{}).value || "NXT DCM";
@@ -976,9 +984,6 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         } else
         if (device.slice(0,venusRelaisIdentifier.length) == venusRelaisIdentifier) {
           httpLog(`Preparing Venus GX device: ${device} \n %O`, controls[device]);
-          var path = `${controlsPath}.${device}`;
-          var fallbackName = ((controls[device].meta||{}).displayName||{}).value || (controls[device].name||{}).value || device;
-          var displayName = this.getName(path, fallbackName);
           var deviceType = "switch";
           var manufacturer = (((controls[device].meta||{}).manufacturer||{}).name||{}).value || "Victron Energy";
           var model = (((controls[device].meta||{}).manufacturer||{}).model||{}).value || "Venus GX";
@@ -989,9 +994,6 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         } else
         if (controls[device].state) { // Device is considered a switch if it has electrical.switches.<indentifier>.state
           httpLog(`Preparing generic device: ${device} \n %O`, controls[device]);
-          var path = `${controlsPath}.${device}`;
-          var fallbackName = ((controls[device].meta||{}).displayName||{}).value || (controls[device].name||{}).value || device;
-          var displayName = this.getName(path, fallbackName);
           var deviceType = "switch";
           var manufacturer = (((controls[device].meta||{}).manufacturer||{}).name||{}).value || "Unkown";
           var model = (((controls[device].meta||{}).manufacturer||{}).model||{}).value || "Generic Switch";
