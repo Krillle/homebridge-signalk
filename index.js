@@ -83,6 +83,19 @@ const engines = [
   { key : 'starboard.temperature' , displayName : 'Engine starboard' , deviceType : 'temperature'}
 ];
 
+// Contact sensors
+var contactSensors = new Map();
+
+// // Accessory types and Services
+// const serviceMapping = {
+//   'switch': {
+//     'devices' : [Service.Switch],
+//
+//   },
+//
+//
+// };
+
 var errorHandler = (error) => { if ( error ) {
               platform.log('Device unreachable:', error.message)
             } else {
@@ -135,17 +148,20 @@ function SignalKPlatform(log, config, api) {
   this.signalkInitializeDelay = Number(config.signalkInitializeDelay) || defaultsignalkInitializeDelay;
   this.autodetectNewAccessoriesInterval = Number(config.autodetectNewAccessoriesInterval) || defaultAutodetectNewAccessoriesInterval;
 
+  this.percent = (body) => Math.min(Number(body) * 100,100);
+  this.kelvinToCelsius = (body) =>  Number(body) - 273.15;
+  this.onOffCondition = (body) => switchOnValues.includes(body);
+
   this.emptyBatteryVoltage = Number(config.emptyBatteryVoltage) || defaultEmptyBatteryVoltage;
   this.lowBatteryVoltage = Number(config.lowBatteryVoltage) || defaultLowBatteryVoltage;
   this.fullBatteryVoltage = Number(config.fullBatteryVoltage) || defaultFullBatteryVoltage;
   this.chargingBatteryVoltage = Number(config.chargingBatteryVoltage) || defaultChargingBatteryVoltage;
 
-  this.percent = (body) => Number(body) * 100;
-
   this.batteryCondition = {
-    soc : (voltage) => Math.min((Number(voltage) - this.emptyBatteryVoltage) / (this.fullBatteryVoltage - this.emptyBatteryVoltage) * 100, 100),
+    soc : (voltage) => Math.max(Math.min((Number(voltage) - this.emptyBatteryVoltage) / (this.fullBatteryVoltage - this.emptyBatteryVoltage) * 100, 100),0),
     low : (voltage) =>  Number(voltage) <= this.lowBatteryVoltage,
-    charging : (voltage) =>  Number(voltage) >= this.chargingBatteryVoltage
+    chargingVoltage : (voltage) =>  Number(voltage) >= this.chargingBatteryVoltage,
+    chargingCurrent : (current) => Number(current) > 0
   }
 
   this.lowFreshWaterLevel = Number(config.lowFreshWaterLevel) || defaultLowFreshWaterLevel;
@@ -167,6 +183,19 @@ function SignalKPlatform(log, config, api) {
     gas : (level) =>  Number(level) * 100 <= this.lowGasLevel,
     ballast : (level) =>  Number(level) * 100 <= this.lowBallastLevel
   }
+
+  // Contact sensors
+  if (this.config.contactSensors ) {
+    this.config.contactSensors.forEach(device => {
+      contactSensors.set(device.key, { // Unique identifier for UUID
+        'key' : device.key,
+        'name': device.name,
+        'operator' : device.operator || ">",
+        'treshold' : device.treshold || 0
+      })
+    });
+  };
+
 
   // this.requestServer = http.createServer(function(request, response) {
   //   if (request.url === "/add") {
@@ -207,11 +236,18 @@ function SignalKPlatform(log, config, api) {
           platform.log("Checking for",this.config.ignoredPaths.length,"ignored devices");
           this.config.ignoredPaths.forEach((path, key, map) => {
             if (platform.accessories.has(path)) {
-              platform.log('Found ignored Accessory', platform.accessories.get(path).displayName);
               platform.removeAccessory(platform.accessories.get(path));
             }
           })
         };
+
+        // Remove abandoned contact sensors
+        this.log("Checking for abandoned contact sensors");
+        this.accessories.forEach((accessory, key) => {
+          if ((accessory.context.deviceType == "contactSensor") && !contactSensors.has(accessory.context.path)) {
+            this.removeAccessory(accessory);
+          };
+        });
 
         // Start accessories value updating
         platform.InitiateWebSocket()
@@ -279,6 +315,9 @@ SignalKPlatform.prototype.configureAccessory = function(accessory) {
       break;
     case 'leakSensor':
       this.addLeakServices(accessory);
+      break;
+    case 'contactSensor':
+      this.addContactServices(accessory);
       break;
   }
 
@@ -383,7 +422,6 @@ SignalKPlatform.prototype.configurationRequestHandler = function(context, reques
 //   // Plugin can save context on accessory to help restore accessory in configureAccessory()
 //   // newAccessory.context.something = "Something"
 //
-//   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
 //   newAccessory.addService(Service.Lightbulb, "Test Light")
 //   .getCharacteristic(Characteristic.On)
 //   .on('set', function(value, callback) {
@@ -459,9 +497,13 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
       newAccessory.addService(Service.LeakSensor, accessoryName)
       this.addLeakServices(newAccessory);
       break;
+    case 'contactSensor':
+      newAccessory.addService(Service.ContactSensor, accessoryName)
+      this.addContactServices(newAccessory);
+      break;
   }
 
-  this.accessories.set(path, newAccessory);
+  this.accessories.set(path, newAccessory);  // FIXME: Does not allow multiple contact sensors on one path
 // console.log(newAccessory);
   this.api.registerPlatformAccessories("homebridge-signalk", "SignalK", [newAccessory]);
 }
@@ -476,7 +518,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
 
     // FIXME: Get state of device before cycle
     // var stateBefore;
-    // platform.getOnOff.bind(platform, path + '.state',(error,value)=> {stateBefore = value});
+    // platform.getStatus.bind(platform, path + '.state',this.onOffCondition,(error,value)=> {stateBefore = value});
     // console.log(stateBefore);
 
     // Off/On/Off/Restore cycle
@@ -491,13 +533,12 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
     callback();
   });
 
-  // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   var dataPath = accessory.context.path + '.state'
   var subscriptionList = [];
 
   accessory.getService(Service.Lightbulb)
   .getCharacteristic(Characteristic.On)
-  .on('get', this.getOnOff.bind(this, dataPath))
+  .on('get', this.getStatus.bind(this, dataPath, this.onOffCondition))
   .on('set', function(value, callback) {
     platform.log(`Set dimmer ${accessory.displayName}.state to ${value}`)
     platform.setOnOff(accessory.context.identifier, value, errorHandler)
@@ -506,7 +547,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.Lightbulb).getCharacteristic(Characteristic.On)
-  subscription.conversion = (body) => body == true
+  subscription.conversion = this.onOffCondition
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
@@ -521,7 +562,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
 
   accessory.getService(Service.Lightbulb)
   .getCharacteristic(Characteristic.Brightness)
-  .on('get', this.getRatio.bind(this, dataPath))
+  .on('get', this.getStatus.bind(this, dataPath, this.percent))
   .on('set', function(value, callback) {
     platform.log(`Set dimmer ${accessory.displayName}.dimmingLevel to ${value}%`)
     platform.SetRatio(accessory.context.identifier, value, errorHandler)
@@ -545,13 +586,12 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
 SignalKPlatform.prototype.addSwitchServices = function(accessory) {
   var platform = this;
 
-  // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   const dataPath = accessory.context.path + '.state'
   var subscriptionList = [];
 
   accessory.getService(Service.Switch)
   .getCharacteristic(Characteristic.On)
-  .on('get', this.getOnOff.bind(this, dataPath))
+  .on('get', this.getStatus.bind(this, dataPath, this.onOffCondition))
   .on('set', function(value, callback) {
     platform.log(`Set switch ${accessory.displayName}.state to ${value}`)
     platform.setOnOff(accessory.context.identifier, value, errorHandler)
@@ -560,7 +600,7 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.Switch).getCharacteristic(Characteristic.On)
-  subscription.conversion = (body) => body == true
+  subscription.conversion = this.onOffCondition
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
@@ -573,16 +613,15 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
 
 // Add services for Temperature Sensor to existing accessory object
 SignalKPlatform.prototype.addTemperatureServices = function(accessory) {
-  // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   var subscriptionList = [];
 
   accessory.getService(Service.TemperatureSensor)
   .getCharacteristic(Characteristic.CurrentTemperature)
-  .on('get', this.getTemperature.bind(this, accessory.context.path));
+  .on('get', this.getStatus.bind(this, accessory.context.path, this.kelvinToCelsius));
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.TemperatureSensor).getCharacteristic(Characteristic.CurrentTemperature)
-  subscription.conversion = (body) =>  Number(body) - 273.15
+  subscription.conversion = this.kelvinToCelsius
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(accessory.context.path, subscriptionList);
@@ -595,12 +634,11 @@ SignalKPlatform.prototype.addTemperatureServices = function(accessory) {
 
 // Add services for Humidity Sensor to existing accessory object
 SignalKPlatform.prototype.addHumidityServices = function(accessory) {
-  // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   var subscriptionList = [];
 
   accessory.getService(Service.HumiditySensor)
   .getCharacteristic(Characteristic.CurrentRelativeHumidity)
-  .on('get', this.getRatio.bind(this, accessory.context.path));
+  .on('get', this.getStatus.bind(this, accessory.context.path, this.percent));
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.HumiditySensor).getCharacteristic(Characteristic.CurrentRelativeHumidity)
@@ -617,13 +655,12 @@ SignalKPlatform.prototype.addHumidityServices = function(accessory) {
 
 // Add services for Tanks (mapped as Humidity Sensor) to existing accessory object
 SignalKPlatform.prototype.addTankServices = function(accessory) {
-  // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   const dataPath = accessory.context.path + '.currentLevel'
   var subscriptionList = [];
 
   accessory.getService(Service.HumiditySensor)   // Workaround, as Home app does not show tank levels
   .getCharacteristic(Characteristic.CurrentRelativeHumidity)
-  .on('get', this.getRatio.bind(this, dataPath));
+  .on('get', this.getStatus.bind(this, dataPath, this.percent));
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.HumiditySensor).getCharacteristic(Characteristic.CurrentRelativeHumidity)
@@ -641,7 +678,7 @@ SignalKPlatform.prototype.addTankServices = function(accessory) {
 
   accessory.getService(Service.BatteryService)
   .getCharacteristic(Characteristic.BatteryLevel)
-  .on('get', this.getRatio.bind(this, dataPath));
+  .on('get', this.getStatus.bind(this, dataPath, this.percent));
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.BatteryLevel)
@@ -658,7 +695,6 @@ SignalKPlatform.prototype.addTankServices = function(accessory) {
 
 // Add services for Batteries (with Humidity Sensor as main accessory) to existing accessory object
 SignalKPlatform.prototype.addVoltageBatteryServices = function(accessory) {
-  // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   var dataPath = accessory.context.path + '.voltage'
   var subscriptionList = [];
 
@@ -691,11 +727,11 @@ SignalKPlatform.prototype.addVoltageBatteryServices = function(accessory) {
 
   accessory.getService(Service.BatteryService)
   .getCharacteristic(Characteristic.ChargingState)
-  .on('get', this.getStatus.bind(this, dataPath, this.batteryCondition.charging));
+  .on('get', this.getStatus.bind(this, dataPath, this.batteryCondition.chargingVoltage));
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.ChargingState)
-  subscription.conversion = this.batteryCondition.charging
+  subscription.conversion = this.batteryCondition.chargingVoltage
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
@@ -703,36 +739,17 @@ SignalKPlatform.prototype.addVoltageBatteryServices = function(accessory) {
     this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
     accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
   };
-
-  // dataPath = accessory.context.path + '.chargingMode'
-  // accessory.getService(Service.BatteryService)
-  // .getCharacteristic(Characteristic.ChargingState)
-  // .on('get', this.getChargingState.bind(this, dataPath));
-  //
-  // subscriptionList = [];
-  // subscription = new Object ();
-  // subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.ChargingState)
-  // subscription.conversion = (body) =>  notChargingValues.indexOf(body) == -1 ? 1 : 0
-  // subscriptionList.push(subscription)
-  //
-  // this.updateSubscriptions.set(dataPath, subscriptionList);
-  // if (this.ws.readyState === websocket.OPEN) {
-  //   this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
-  //   accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
-  // };
-
 }
 
 
 // Add services for SOC Batteries (with Humidity Sensor as main accessory) to existing accessory object
 SignalKPlatform.prototype.addSOCBatteryServices = function(accessory) {
-  // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   var dataPath = accessory.context.path + '.capacity.stateOfCharge'
   var subscriptionList = [];
 
   accessory.getService(Service.HumiditySensor)   // Mapped to use humidity sensor to show SOC in Home app
   .getCharacteristic(Characteristic.CurrentRelativeHumidity)
-  .on('get', this.getRatio.bind(this, dataPath));
+  .on('get', this.getStatus.bind(this, dataPath, this.percent));
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.HumiditySensor).getCharacteristic(Characteristic.CurrentRelativeHumidity)
@@ -741,7 +758,7 @@ SignalKPlatform.prototype.addSOCBatteryServices = function(accessory) {
 
   accessory.getService(Service.BatteryService)
   .getCharacteristic(Characteristic.BatteryLevel)
-  .on('get', this.getRatio.bind(this, dataPath));
+  .on('get', this.getStatus.bind(this, dataPath, this.percent));
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.BatteryLevel)
@@ -755,22 +772,23 @@ SignalKPlatform.prototype.addSOCBatteryServices = function(accessory) {
   };
 
 
-  // dataPath = accessory.context.path + '.chargingMode'
-  // accessory.getService(Service.BatteryService)
-  // .getCharacteristic(Characteristic.ChargingState)
-  // .on('get', this.getChargingState.bind(this, dataPath));
-  //
-  // subscriptionList = [];
-  // subscription = new Object ();
-  // subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.ChargingState)
-  // subscription.conversion = (body) =>  notChargingValues.indexOf(body) == -1 ? 1 : 0
-  // subscriptionList.push(subscription)
-  //
-  // this.updateSubscriptions.set(dataPath, subscriptionList);
-  // if (this.ws.readyState === websocket.OPEN) {
-  //   this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
-  //   accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
-  // };
+  dataPath = accessory.context.path + '.current'
+  subscriptionList = [];
+
+  accessory.getService(Service.BatteryService)
+  .getCharacteristic(Characteristic.ChargingState)
+  .on('get', this.getStatus.bind(this, dataPath, this.batteryCondition.chargingCurrent));
+
+  subscription = new Object ();
+  subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.ChargingState)
+  subscription.conversion = this.batteryCondition.chargingCurrent
+  subscriptionList.push(subscription)
+
+  this.updateSubscriptions.set(dataPath, subscriptionList);
+  if (this.ws.readyState === websocket.OPEN) {
+    this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
+    accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
+  };
 
 
   dataPath = accessory.context.path + '.voltage'
@@ -785,14 +803,14 @@ SignalKPlatform.prototype.addSOCBatteryServices = function(accessory) {
   subscription.conversion = this.batteryCondition.low
   subscriptionList.push(subscription)
 
-  accessory.getService(Service.BatteryService)
-  .getCharacteristic(Characteristic.ChargingState)
-  .on('get', this.getStatus.bind(this, dataPath, this.batteryCondition.charging));
-
-  subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.ChargingState)
-  subscription.conversion = this.batteryCondition.charging
-  subscriptionList.push(subscription)
+  // accessory.getService(Service.BatteryService)
+  // .getCharacteristic(Characteristic.ChargingState)
+  // .on('get', this.getStatus.bind(this, dataPath, this.batteryCondition.chargingVoltage));
+  //
+  // subscription = new Object ();
+  // subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.ChargingState)
+  // subscription.conversion = this.batteryCondition.chargingVoltage
+  // subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
   if (this.ws.readyState === websocket.OPEN) {
@@ -804,17 +822,62 @@ SignalKPlatform.prototype.addSOCBatteryServices = function(accessory) {
 
 // Add services for Leak Sensor to existing accessory object
 SignalKPlatform.prototype.addLeakServices = function(accessory) {
-  // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
   const dataPath = accessory.context.path + '.state'
   var subscriptionList = [];
 
   accessory.getService(Service.LeakSensor)
   .getCharacteristic(Characteristic.LeakDetected)
-  .on('get', this.getOnOff.bind(this, dataPath))
+  .on('get', this.getStatus.bind(this, dataPath, this.onOffCondition))
 
   subscription = new Object ();
   subscription.characteristic = accessory.getService(Service.LeakSensor).getCharacteristic(Characteristic.LeakDetected)
-  subscription.conversion = (body) => body == true
+  subscription.conversion = this.onOffCondition
+  subscriptionList.push(subscription)
+
+  this.updateSubscriptions.set(dataPath, subscriptionList);
+  if (this.ws.readyState === websocket.OPEN) {
+    this.ws.send(`{"context": "vessels.self","subscribe":[{"path":"${dataPath}"}]}`)
+    accessory.context.subscriptions.push(dataPath)  // Link from accessory to subscription
+  };
+}
+
+// Add services for Contact Sensor to existing accessory object
+SignalKPlatform.prototype.addContactServices = function(accessory) {
+  const dataPath = accessory.context.path
+  var subscriptionList = this.updateSubscriptions.get(dataPath) || [];
+
+  var condition = contactSensors.get(accessory.context.identifier) || {'operator' : '>=', treshold : 0} ;
+  switch (condition.operator) {
+    case "==":
+      deviceConversion = (value) => value == condition.treshold;
+      break;
+    case "!=":
+      deviceConversion = (value) => value != condition.treshold;
+      break;
+    case "<":
+      deviceConversion = (value) => Number(value) < Number(condition.treshold);
+      break;
+    case "<=":
+      deviceConversion = (value) => Number(value) <= Number(condition.treshold);
+      break;
+    case ">=":
+      deviceConversion = (value) => Number(value) >= Number(condition.treshold);
+      break;
+    // case "in":
+    //   deviceConversion = value => condition.treshold.includes(value);
+    //   break;
+    default: // defaut is ">":
+      deviceConversion = (value) => Number(value) > Number(condition.treshold);
+      break;
+  };
+
+  accessory.getService(Service.ContactSensor)
+  .getCharacteristic(Characteristic.ContactSensorState)
+  .on('get', this.getStatus.bind(this, dataPath, deviceConversion))
+
+  subscription = new Object ();
+  subscription.characteristic = accessory.getService(Service.ContactSensor).getCharacteristic(Characteristic.ContactSensorState)
+  subscription.conversion = deviceConversion
   subscriptionList.push(subscription)
 
   this.updateSubscriptions.set(dataPath, subscriptionList);
@@ -839,7 +902,7 @@ SignalKPlatform.prototype.removeAccessoriesNotPresent = function() {
   this.accessories.forEach((accessory, key, map) => {
     this.checkKey(accessory.context.path, (error, result) => {
       if (error && result == 'N/A') {
-        this.log('Found not present Accessory', accessory.displayName);
+        this.log('Found not present accessory', accessory.displayName);
         this.removeAccessory(accessory);
       }
     })
@@ -1044,8 +1107,8 @@ SignalKPlatform.prototype.processFullTree = function(body) {
   this.log("Adding engine data");
   engines.forEach(device => {
     var path = `${enginePath}.${device.key}`;
-    var environment = _.get(tree, path);
-    if ( environment
+    var engine = _.get(tree, path);
+    if ( engine
           && this.noignoredPath(path)
           && !this.accessories.has(path) ) {
 
@@ -1057,7 +1120,26 @@ SignalKPlatform.prototype.processFullTree = function(body) {
       // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
       this.addAccessory(displayName, device.key, path, manufacturer, model, displayName, enginePath, deviceType);
     }
+    this.log('Done');
   });
+
+  // Add contact sensors
+  // FIXME: Changes in config.json are not affecting already present devices. For updating after creating a unique identifier was needed, as two contact sensors for same path may exist.
+  this.log("Adding contact sensors");
+  contactSensors.forEach((device, identifier) => {
+    var path = device.key;
+    if (_.get(tree, device.key)
+          && !this.accessories.has(path) ) {
+
+      var displayName = device.name || this.getName(path, device.key);
+      var deviceType = 'contactSensor';
+      var manufacturer = 'NMEA';
+      var model = `${device.operator} ${device.treshold} Sensor`;
+
+      // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
+      this.addAccessory(displayName, identifier, path, manufacturer, model, path, path, deviceType);
+      }
+    });
   this.log('Done');
 }
 
@@ -1103,7 +1185,7 @@ SignalKPlatform.prototype.getValue = function(path, cb, conversion) {
               httpLog(`response: ${response.statusCode} ${response.request.method} ${response.request.uri.path}`)
               cb(new Error(`invalid response ${response.statusCode}`), null)
             } else {
-              httpLog('Ok:', body, '>', conversion(body))
+              httpLog('Ok:', body, '→', conversion(body))
               cb(null, conversion(body))
             }
           })
@@ -1113,38 +1195,6 @@ SignalKPlatform.prototype.getValue = function(path, cb, conversion) {
 SignalKPlatform.prototype.checkKey = function(path, callback) {
   this.getValue(path, callback,
               (body) => body)
-}
-
-// Returns the value for path in %
-SignalKPlatform.prototype.getRatio = function(path, callback) {
-  this.getValue(path + '.value', callback, this.percent)
-}
-
-// Returns the state of path as boolean
-SignalKPlatform.prototype.getOnOff = function(path, callback) {
-  this.getValue(path + '.value', callback,
-                (body) => (switchOnValues.includes(body)) )
-}
-
-// Returns temperature in °C
-SignalKPlatform.prototype.getTemperature = function(path, callback) {
-  this.getValue(path + '.value', callback,
-                (body) =>  Number(body) - 273.15)
-}
-
-const notChargingValues = [
-  'not charging',
-  'other',
-  'off',
-  'low power',
-  'fault'
-];
-
-SignalKPlatform.prototype.getChargingState = function(path, callback)  {
-  this.getValue(path + '.value', callback,
-                (body) =>  {
-                  return notChargingValues.indexOf(body) == -1 ? 1 : 0;
-                })
 }
 
 SignalKPlatform.prototype.getStatus = function(path, condition, callback) {
@@ -1236,7 +1286,7 @@ SignalKPlatform.prototype.InitiateWebSocket = function() {
         targetList = platform.updateSubscriptions.get(valuePath)
         if (targetList) {
           targetList.forEach(target => {
-            wsLog('Updating value:', valuePath, '>', target.characteristic.displayName, '|', valueValue, '>', target.conversion(valueValue), '|', target.conversion);
+            wsLog('Updating value:', valuePath, '→', target.characteristic.displayName, '|', valueValue, '→', target.conversion(valueValue), '|', `${target.conversion}`);
             target.characteristic.updateValue(target.conversion(valueValue));
           })
         } else {

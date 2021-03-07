@@ -33,25 +33,24 @@
                "type": "boolean",
                "placeholder": false,
                "description": "If checked, devices which are not present in Signal K (after restart of Signal K server) are removed from HomeKit (at start of Homebridge server). Uncheck to prevent devices disappearing after restarting Raspberry Pi in case homebridge loads faster than the Signal K tree is being filled."
-           },
+            },
             "signalkInitializeDelay": {
                "title": "Signal K API Delay",
                "type": "integer",
                "placeholder": 10000,
                "description": " Delay before adding or removing devices to give Signal K time to fill the API tree (in milliseconds)"
-           },
-           "autodetectNewAccessoriesInterval": {
-              "title": "Detecting New Devices Interval",
-              "type": "integer",
-              "placeholder": 900000,
+            },
+            "autodetectNewAccessoriesInterval": {
+                "title": "Detecting New Devices Interval",
+                "type": "integer",
+                "placeholder": 900000,
               "description": "Interval to check for new devices (in milliseconds)"
-          },
-
-             "emptyBatteryVoltage": {
+            },
+            "emptyBatteryVoltage": {
                 "title": "Empty Battery Voltage",
                 "type": "integer",
                 "placeholder": 22,
-                "description": "Voltage at which battery state of charge will be shown as 0% (ignored if SOC is reported from battery)"
+              "description": "Voltage at which battery state of charge will be shown as 0% (ignored if SOC is reported from battery)"
             },
             "fullBatteryVoltage": {
                 "title": "Full Battery Voltage",
@@ -71,7 +70,6 @@
                 "placeholder": 27,
                 "description": "Voltage above wich batteries will be shown as charging"
             },
-
             "lowFreshWaterLevel": {
                 "title": "Fresh Water Low Level",
                 "type": "integer",
@@ -136,8 +134,48 @@
                 "maximum": 100,
                 "description": "Percent level below wich ballast tanks will shown a warning"
             },
+            "contactSensors": {
+                "title": "Contact Sensors",
+                "type": "array",
+                "description": "Set up contact sensors which are triggered when a Signal K API key reaches a threshold value.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "title": "API Key",
+                        "type": "string",
+                        "required": true,
+                        "placeholder": "e.g. navigation.speedOverGround",
+                        "description": "Signal K API key for which you want to see a contact sensor device in HomeKit"
+                      },
+                      "name": {
+                        "title": "Name",
+                        "type": "string",
+                        "description": "Name to be shown for this contact sensor device in HomeKit"
+                      },
+                      "operator": {
+                        "title": "Operator",
+                        "type": "string",
+                        "default": ">",
+                        "oneOf": [
+                           { "title": "Equal to treshold (==)", "enum": ["=="] },
+                           { "title": "Not equal to treshold (!=)", "enum": ["!="] },
+                           { "title": "Less than treshold (<)", "enum": ["<"] },
+                           { "title": "Less than or equal to treshold (<=)", "enum": ["<="] },
+                           { "title": "Greater than treshold (>)", "enum": [">"] },
+                           { "title": "Greater than or equal to treshold (>=)", "enum": [">="] }
+                        ]
+                      },
+                      "treshold": {
+                        "title": "Treshold",
+                        "type": "string"
+                      }
+                    },
+                    "required": [ "key" ]
+                }
+            },
             "ignoredPaths": {
-              "title": "Ignored API Keys",
+                "title": "Ignored API Keys",
                 "type": "array",
                 "description": "Signal K API keys for which you don't want to see a device in HomeKit. Associated devices will be deleted from HomeKit if already present.",
                 "items": {
@@ -146,13 +184,18 @@
                     "placeholder": "tanks.wasteWater.0"
                 }
             }
+
         }
     },
     "form": null,
     "display": null,
     "layout": [
       {
-        "items": ["host","ssl","securityToken"]
+        "items": [
+          "host",
+          "ssl",
+          "securityToken"
+        ]
       },
       {
         "type": "fieldset",
@@ -177,6 +220,44 @@
         ]
       },
       {
+        "key": "contactSensors",
+        "expandable": true,
+        "type": "array",
+        "items": [
+          {
+            "type": "div",
+            "items": [
+              {
+                "items": [
+                  "contactSensors[].key",
+                  "contactSensors[].name",
+                  {
+                    "type": "flex",
+                    "flex-flow": "row wrap",
+                    "items": [
+                      {
+                        "type": "flex",
+                        "flex-flow": "column",
+                        "items": [
+                          "contactSensors[].operator"
+                        ]
+                      },
+                      {
+                        "type": "flex",
+                        "flex-flow": "column",
+                        "items": [
+                          "contactSensors[].treshold"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
         "key": "ignoredPaths",
         "expandable": true,
         "type": "array",
@@ -187,8 +268,7 @@
             "flex-direction": "row",
             "items": [
               {
-                "key": "ignoredPaths[]",
-                "placeholder": "e.g. tanks.wasteWater.0"
+                "key": "ignoredPaths[]"
               }
             ]
           }
