@@ -25,14 +25,14 @@
                 "title": "Signal K Security Token",
                 "type": "string",
                 "required": false,
-                "description": "Token needed to operate switches or dimmers. Genreate token with signalk-generate-token."
+                "description": "A token is needed to switch switches or dimmers. Create your token with signalk-generate-token."
             },
 
             "removeDevicesNotPresent": {
                "title": "Remove Devices Not Present in Signal K",
                "type": "boolean",
                "placeholder": false,
-               "description": "If checked, devices which are not present in Signal K (after restart of Signal K server) are removed from HomeKit (at start of Homebridge server). Uncheck to prevent devices disappearing after restarting Raspberry Pi in case homebridge loads faster than the Signal K tree is being filled."
+               "description": "If checked, devices which are not present in Signal K (after restart of Signal K server) are removed from HomeKit (at start of Homebridge server). Uncheck to prevent devices disappearing when restarting Raspberry Pi in case homebridge loads faster than the Signal K tree is being filled."
             },
             "signalkInitializeDelay": {
                "title": "Signal K API Delay",
@@ -68,7 +68,7 @@
                 "title": "Charging Battery Voltage",
                 "type": "integer",
                 "placeholder": 27,
-                "description": "Voltage above wich batteries will be shown as charging"
+                "description": "Voltage above wich batteries will be shown as charging (ignored if current is reported from battery)"
             },
             "lowFreshWaterLevel": {
                 "title": "Fresh Water Low Level",
@@ -76,7 +76,7 @@
                 "placeholder": 25,
                 "minimum": 0,
                 "maximum": 100,
-                "description": "Percent level below wich fresh water tanks will shown a warning"
+                "description": "Percent level below wich fresh water tanks will show a warning"
             },
             "highWasteWaterLevel": {
                 "title": "Waster Water High Level",
@@ -84,7 +84,7 @@
                 "placeholder": 75,
                 "minimum": 0,
                 "maximum": 100,
-                "description": "Percent level above wich waste water tanks will shown a warning"
+                "description": "Percent level above wich waste water tanks will show a warning"
             },
             "highBlackWaterLevel": {
                 "title": "Black Water High Level",
@@ -92,7 +92,7 @@
                 "placeholder": 75,
                 "minimum": 0,
                 "maximum": 100,
-                "description": "Percent level above wich black water tanks will shown a warning"
+                "description": "Percent level above wich black water tanks will show a warning"
             },
             "lowFuelLevel": {
                 "title": "Fuel Low Level",
@@ -100,7 +100,7 @@
                 "placeholder": 50,
                 "minimum": 0,
                 "maximum": 100,
-                "description": "Percent level below wich fuel tanks will shown a warning"
+                "description": "Percent level below wich fuel tanks will show a warning"
             },
             "lowLubricationLevel": {
                 "title": "Lubrication Low Level",
@@ -108,7 +108,7 @@
                 "placeholder": 50,
                 "minimum": 0,
                 "maximum": 100,
-                "description": "Percent level below wich lubrication tanks will shown a warning"
+                "description": "Percent level below wich lubrication tanks will show a warning"
             },
             "lowLiveWellLevel": {
                 "title": "Fuel Live Well Level",
@@ -116,7 +116,7 @@
                 "placeholder": 50,
                 "minimum": 0,
                 "maximum": 100,
-                "description": "Percent level below wich live well tanks will shown a warning"
+                "description": "Percent level below wich live well tanks will show a warning"
             },
             "lowGasLevel": {
                 "title": "Fuel Gas Level",
@@ -124,7 +124,7 @@
                 "placeholder": 50,
                 "minimum": 0,
                 "maximum": 100,
-                "description": "Percent level below wich gas tanks will shown a warning"
+                "description": "Percent level below wich gas tanks will show a warning"
             },
             "lowBallastLevel": {
                 "title": "Fuel Ballast Level",
@@ -132,7 +132,7 @@
                 "placeholder": 50,
                 "minimum": 0,
                 "maximum": 100,
-                "description": "Percent level below wich ballast tanks will shown a warning"
+                "description": "Percent level below wich ballast tanks will show a warning"
             },
             "contactSensors": {
                 "title": "Contact Sensors",
