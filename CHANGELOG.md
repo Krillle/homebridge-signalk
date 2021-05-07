@@ -1,5 +1,9 @@
 ## Change Log
 
+### v1.4.0 (2021/05/05 22:00)
+- feature: reconnect to Signal K after connection was closed
+- fix: API key /environment/inside/relativeHumidity/
+
 ### v1.3.0 (2021/03/08 00:45)
 - feature: add contact sensors for any API key
 - feature: battery charging state based on positive current value

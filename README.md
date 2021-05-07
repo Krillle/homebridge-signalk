@@ -38,7 +38,7 @@ The following Signal K standard keys are mapped to temperature and humidity sens
 /propulsion/starboard/temperature/  
 
 /environment/outside/humidity/  
-/environment/inside/humidity/  
+/environment/inside/relativeHumidity/  
 /environment/inside/engineRoom/relativeHumidity/  
 /environment/inside/mainCabin/relativeHumidity/  
 /environment/inside/refrigerator/relativeHumidity/  
@@ -168,7 +168,6 @@ Create contact sensors by a list of objects with Signal K API key, name for cont
 
 ## Debugging
 To monitor communication with Signal K start HomeBridge with DEBUG environment variable:    
-`DEBUG=* homebridge`  
 `DEBUG=homebridge-signalk:http` Signal K API requests  
 `DEBUG=homebridge-signalk:websocket` Signal K WebSocket updates  
 

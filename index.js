@@ -35,7 +35,6 @@ const chargersDevices = [
   { key : 'capacity.stateOfCharge' , displayName : 'Charger SOC' , deviceType : 'batterySOC'}
 ];
 
-
 // Environment temperatures + humidity
 const environmentPath = 'environment'
 const environments = [
@@ -50,7 +49,7 @@ const environments = [
   { key : 'cpu.temperature' , displayName : 'Raspberry Pi' , deviceType : 'temperature'},
 
   { key : 'outside.humidity' , displayName : 'Outside' , deviceType : 'humidity'},
-  { key : 'inside.humidity' , displayName : 'Inside' , deviceType : 'humidity'},
+  { key : 'inside.relativeHumidity' , displayName : 'Inside' , deviceType : 'humidity'},
   { key : 'inside.engineRoom.relativeHumidity' , displayName : 'Engine Room' , deviceType : 'humidity'},
   { key : 'inside.mainCabin.relativeHumidity' , displayName : 'Main Cabin' , deviceType : 'humidity'},
   { key : 'inside.refrigerator.relativeHumidity' , displayName : 'Refrigerator' , deviceType : 'humidity'},
@@ -138,12 +137,12 @@ function SignalKPlatform(log, config, api) {
   this.url = 'http' + (config.ssl ? 's' : '') + '://' + config.host + '/' + urlPath;
   this.wsl = 'ws' + (config.ssl ? 's' : '') + '://' + config.host + '/' + wsPath;
 
-  let wsOptions = {}
+  this.wsOptions = {}
   if (config.securityToken) {
-    wsOptions.headers = { 'Authorization': 'JWT ' + config.securityToken }
+    this.wsOptions.headers = { 'Authorization': 'JWT ' + config.securityToken }
     this.securityToken = config.securityToken
   }
-  this.ws = new websocket(this.wsl, "ws", wsOptions);
+  this.InitiateWebSocket();   // Start accessories value updating
 
   this.signalkInitializeDelay = Number(config.signalkInitializeDelay) || defaultsignalkInitializeDelay;
   this.autodetectNewAccessoriesInterval = Number(config.autodetectNewAccessoriesInterval) || defaultAutodetectNewAccessoriesInterval;
@@ -278,9 +277,6 @@ function SignalKPlatform(log, config, api) {
             this.removeAccessory(accessory);
           };
         });
-
-        // Start accessories value updating
-        platform.InitiateWebSocket()
 
         // Check Reachability after Signal K API tree has initialized
         setTimeout(platform.updateAccessoriesReachability.bind(this), platform.signalkInitializeDelay);
@@ -904,7 +900,6 @@ SignalKPlatform.prototype.updateAccessoriesReachability = function() {
 
 SignalKPlatform.prototype.removeAccessoriesNotPresent = function() {
   // Remove not reachable accessories: cached accessories no more present in Signal K
-  // FIXME: removeAccessory() has a potential race condition with InitiateWebSocket()
   this.log("Remove unreachable devices");
   this.accessories.forEach((accessory, key, map) => {
     this.checkKey(accessory.context.path, (error, result) => {
@@ -922,9 +917,11 @@ SignalKPlatform.prototype.removeAccessory = function(accessory) {
   this.accessories.delete(accessory.context.path);
   accessory.context.subscriptions.forEach(subscription => {
     this.updateSubscriptions.delete(subscription);
-    // FIXME: Scott 30.12.20: Unsubscribing websockets is not implementd in Signal K
-    // this.ws.send(`{"context": "vessels.self","unsubscribe":[{"path":"${subscription}"}]}`)
-    // wsLog('removed',`{"context": "vessels.self","unsubscribe":[{"path":"${subscription}"}]}`);
+    // FIXME: Scott 30.12.20: Unsubscribing single websockets is not implementd in Signal K
+    // if (this.ws.readyState === websocket.OPEN) {
+    //   this.ws.send(`{"context": "vessels.self","unsubscribe":[{"path":"${subscription}"}]}`)
+    //   wsLog('removed',`{"context": "vessels.self","unsubscribe":[{"path":"${subscription}"}]}`);
+    // }
   })
 }
 
@@ -1256,18 +1253,31 @@ SignalKPlatform.prototype.setOnOff = function(device, value, callback) {
 SignalKPlatform.prototype.InitiateWebSocket = function() {
   platform = this;
 
-  // Build WebSocket subscription string
-  var subscriptionPaths = [];
-  this.updateSubscriptions.forEach((subscription, key, map) => {
-    subscriptionPaths.push({"path": key})
-  });
-
-  var subscriptionMessage = `{"context": "vessels.self","subscribe":${JSON.stringify(subscriptionPaths)}}`
-  wsLog(subscriptionMessage);
+  this.ws = new websocket(this.wsl, "ws", this.wsOptions);
 
   this.ws.on('open', function open() {
+    // Build WebSocket subscription string
+    var subscriptionPaths = [];
+    platform.updateSubscriptions.forEach((subscription, key, map) => {
+      subscriptionPaths.push({"path": key})
+    });
+
+    var subscriptionMessage = `{"context": "vessels.self","subscribe":${JSON.stringify(subscriptionPaths)}}`
+    wsLog(subscriptionMessage);
+
     platform.ws.send(subscriptionMessage);
     platform.log('websocket Subscription message sent');
+  });
+
+  this.ws.on('close', function close(code) {
+    platform.log('websocket Closed by server with code', code, 'Reconnect in 5 seconds');
+    // connection closed, discard old websocket and create a new one in 5s
+    platform.ws = null
+    setTimeout(platform.InitiateWebSocket.bind(platform), 5000)
+  });
+
+  this.ws.on('ping', function heartbeat(data) {
+    platform.log('websocket Heartbeat recieved', data);
   });
 
   this.ws.on('error', function wserror(e) {
