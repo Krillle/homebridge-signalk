@@ -1,5 +1,11 @@
 ## Change Log
 
+### v1.4.2 (2021/05/29 13:00)
+- fix: display state of switches and dimmers correctly after switching on
+
+### v1.4.1 (2021/05/07 22:00)
+- chore: bump lodash from 4.17.19 to 4.17.21
+
 ### v1.4.0 (2021/05/05 22:00)
 - feature: reconnect to Signal K after connection was closed
 - fix: API key /environment/inside/relativeHumidity/

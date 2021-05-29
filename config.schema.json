@@ -38,7 +38,7 @@
                "title": "Signal K API Delay",
                "type": "integer",
                "placeholder": 10000,
-               "description": " Delay before adding or removing devices to give Signal K time to fill the API tree (in milliseconds)"
+               "description": "Delay before adding or removing devices to give Signal K time to fill the API tree (in milliseconds)"
             },
             "autodetectNewAccessoriesInterval": {
                 "title": "Detecting New Devices Interval",
