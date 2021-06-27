@@ -72,7 +72,7 @@ const defaultLowBallastLevel = 50.0
 const batteriesPath = 'electrical.batteries'
 const defaultEmptyBatteryVoltage = 22
 const defaultLowBatteryVoltage = 23.5
-const defaultFullBatteryVoltage = 26
+const defaultFullBatteryVoltage = 25.8
 const defaultChargingBatteryVoltage = 27
 
 // Engine data

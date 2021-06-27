@@ -1,5 +1,8 @@
 ## Change Log
 
+### v1.4.3 (2021/06/27 14:45)
+- fix: battery voltage can be decimal number
+
 ### v1.4.2 (2021/05/29 13:00)
 - fix: display state of switches and dimmers correctly after switching on
 

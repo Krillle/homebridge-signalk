@@ -48,25 +48,25 @@
             },
             "emptyBatteryVoltage": {
                 "title": "Empty Battery Voltage",
-                "type": "integer",
+                "type": "number",
                 "placeholder": 22,
               "description": "Voltage at which battery state of charge will be shown as 0% (ignored if SOC is reported from battery)"
             },
             "fullBatteryVoltage": {
                 "title": "Full Battery Voltage",
-                "type": "integer",
+                "type": "number",
                 "placeholder": 26,
                 "description": "Voltage at which battery state of charge will be shown as 100% (ignored if SOC is reported from battery)"
             },
             "lowBatteryVoltage": {
                 "title": "Low Battery Voltage",
-                "type": "integer",
+                "type": "number",
                 "placeholder": 23.5,
                 "description": "Voltage below wich a battery low warning will be shown"
             },
             "chargingBatteryVoltage": {
                 "title": "Charging Battery Voltage",
-                "type": "integer",
+                "type": "number",
                 "placeholder": 27,
                 "description": "Voltage above wich batteries will be shown as charging (ignored if current is reported from battery)"
             },
