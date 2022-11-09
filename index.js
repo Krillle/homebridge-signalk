@@ -955,9 +955,7 @@ SignalKPlatform.prototype.accessRequest = function() {
     let body = '{"clientId":"' + clientId + '","description":"' + description + '}';
     
     this.log("Requesting access to Signal K server for " + clientId + " " + description + " at " + this.arl);
-    request.post({url: this.arl,
-            headers: headers,
-            body: body,
+    request.post({url: this.arl, headers: headers, body: body},
             (error, response, body) => {
               if ( error ) {
                 this.log('Signal K error:',error.message,'(Check Signal K server)');
@@ -985,8 +983,7 @@ SignalKPlatform.prototype.accessRequest = function() {
     let requestUrl = kfs['requestUrl'];
     
     this.log("Checking status Signal K access request " + requestID + " at " + requestUrl);
-    request({url: requestUrl,
-            headers: {},
+    request({url: requestUrl, headers: {} },
             (error, response, body) => {
               if ( error ) {
                 this.log('Signal K error:',error.message,'(Check Signal K server)');
