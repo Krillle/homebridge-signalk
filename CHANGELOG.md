@@ -1,5 +1,8 @@
 ## Change Log
 
+### v1.5.0 (2022/11/xx xx:xx)
+- feature: request Signal K access token
+
 ### v1.4.3 (2021/06/27 14:45)
 - fix: battery voltage can be decimal number
 
