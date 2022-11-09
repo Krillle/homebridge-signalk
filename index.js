@@ -998,13 +998,13 @@ SignalKPlatform.prototype.accessRequest = function() {
                 var response = JSON.parse(body);
                 
                 if ( response.accessRequest.permission == 'APPROVED' ) {
-                  this.log('Access request APPROVED);
+                  this.log('Access request APPROVED');
                   kfs['requestState'] = response.accessRequest.permission;
                   kfs['accessToken'] = response.accessRequest.token;
                   kfs['requestUrl'] = this.arHost + response.href;
 
                 } else if ( response.accessRequest.permission == 'DENIED' ) {
-                  this.log('Access request DENIED);
+                  this.log('Access request DENIED');
                   kfs['requestState'] = response.accessRequest.permission;
                   delete kfs['accessToken'];
                   delete kfs['requestUrl'];
