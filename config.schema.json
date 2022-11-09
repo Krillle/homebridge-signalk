@@ -21,7 +21,13 @@
                 "required": true,
                 "description": "Check if Signal K server is awaiting connections via SSL"
             },
-             "securityToken": {
+            "accessRequest": {
+                "title": "Use Access Requests to access Signal K server",
+                "type": "boolean",
+                "default": true,
+                "description": "Check if Homebridge shall use Access Requests to request and be granted access to the Signal K server"
+            },
+            "securityToken": {
                 "title": "Signal K Security Token",
                 "type": "string",
                 "required": false,
@@ -45,6 +51,12 @@
                 "type": "integer",
                 "placeholder": 900000,
               "description": "Interval to check for new devices (in milliseconds)"
+            },
+            "accessRequestInterval": {
+                "title": "Access Request Interval",
+                "type": "integer",
+                "placeholder": 60000,
+              "description": "Interval to check Signal K access request status (in milliseconds)"
             },
             "emptyBatteryVoltage": {
                 "title": "Empty Battery Voltage",
