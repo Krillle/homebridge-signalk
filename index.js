@@ -261,7 +261,7 @@ function SignalKPlatform(log, config, api) {
       this.api = api;
       
       // Initialie key value store 
-      this.kfs = keyFileStorage(this.api.user.storagePath, true);
+      this.kfs = require("key-file-storage")(this.api.user.storagePath, true);
       platform.log("Created keyFileStorage", this.api.user.storagePath);
 
       // Listen to event "didFinishLaunching", this means homebridge already finished loading cached accessories.
