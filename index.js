@@ -310,7 +310,6 @@ function SignalKPlatform(log, config, api) {
 
         // Periodically check status of Signal K access request
         if ( this.config.accessRequest && this.kfs['requestStatus'] != 'APPROVED') {
-          this.log(">>>>> Starting timers for Access Request");        
           setTimeout(platform.accessRequest.bind(this), platform.signalkInitializeDelay);
           setInterval(platform.accessRequest.bind(this), platform.accessRequestInterval);
         }
@@ -989,7 +988,7 @@ SignalKPlatform.prototype.accessRequest = function() {
     let requestId = this.kfs['requestId'];
     let requestUrl = this.kfs['requestUrl'];
     
-    this.log("Checking status Signal K access request " + requestID + " at " + requestUrl);
+    this.log("Checking status Signal K access request " + requestId + " at " + requestUrl);
     request({url: requestUrl, headers: {} },
             (error, response, body) => {
               if ( error ) {
