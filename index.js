@@ -957,9 +957,6 @@ SignalKPlatform.prototype.accessRequest = function() {
   case null: case 'DENIED':
     
     let clientId = UUIDGen.generate(String(Date.now()));
-    
-    The "data" argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received type number (1668066116085)
-    
     let description = "Homebridge " + this.config.name;      
     let headers = {'Content-Type': 'application/json'};
     let body = '{"clientId":"' + clientId + '","description":"' + description + '}';
