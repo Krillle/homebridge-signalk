@@ -959,10 +959,10 @@ SignalKPlatform.prototype.accessRequest = function() {
     let clientId = UUIDGen.generate(String(Date.now()));
     let description = "Homebridge " + this.config.name;      
     let headers = {'Content-Type': 'application/json'};
-    let body = '{"clientId":"' + clientId + '","description":"' + description + '}';
+    let body = JSON.stringify({ "clientId": clientId, "description": description })
     
     this.log("Requesting access to Signal K server for " + clientId + " " + description + " at " + this.arl);
-    request.post({url: this.arl, headers: headers, body: body},
+    request({'method': 'POST', 'url': this.arl, 'headers': headers, 'body': body},
             (error, response, body) => {
               if ( error ) {
                 this.log('Signal K error:',error.message,'(Check Signal K server)');
