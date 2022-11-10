@@ -25,15 +25,15 @@
                 "title": "Use Access Requests to access Signal K server",
                 "type": "boolean",
                 "default": true,
-                "description": "Check if Homebridge shall use Access Requests to request and be granted access to the Signal K server"
+                "required": false,
+                "description": "Check if Homebridge should request to be granted access to the Signal K server. Approve access in Signal K > Security > Access Requests."
             },
             "securityToken": {
                 "title": "Signal K Security Token",
                 "type": "string",
                 "required": false,
-                "description": "A token is needed to switch switches or dimmers. Create your token with signalk-generate-token."
+                "description": "Token entered here overrides token from access requests. Create token with signalk-generate-token."
             },
-
             "removeDevicesNotPresent": {
                "title": "Remove Devices Not Present in Signal K",
                "type": "boolean",
@@ -206,8 +206,7 @@
         "items": [
           "host",
           "ssl",
-          "accessRequest",
-          "securityToken"
+          "accessRequest"
         ]
       },
       {
@@ -215,6 +214,7 @@
         "title": "Optional Configuration",
         "expandable": true,
         "items": [
+          "securityToken",          
           "removeDevicesNotPresent",
           "signalkInitializeDelay",
           "autodetectNewAccessoriesInterval",

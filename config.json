@@ -19,9 +19,9 @@
       "name" : "MyBoat",
       "host": "127.0.0.1:3000",
       "ssl": false,
-      "securityToken": "your.signalk.token.here",
       "accessRequest": "true",
 
+      "securityToken": "explicit.signalk.token.here",
       "removeDevicesNotPresent": false,
       "signalkInitializeDelay": "10000",
       "autodetectNewAccessoriesInterval": "900000",

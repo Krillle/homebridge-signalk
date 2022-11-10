@@ -143,13 +143,6 @@ function SignalKPlatform(log, config, api) {
   this.arl = 'http' + (config.ssl ? 's' : '') + '://' + config.host + '/' + arPath;
   this.arHost = 'http' + (config.ssl ? 's' : '') + '://' + config.host;
 
-  this.wsOptions = {}
-  if (config.securityToken) {
-    this.securityToken = config.securityToken
-    this.wsOptions.headers = { 'Authorization': 'JWT ' + this.securityToken }
-  }
-  this.InitiateWebSocket();   // Start accessories value updating
-
   this.signalkInitializeDelay = Number(config.signalkInitializeDelay) || defaultsignalkInitializeDelay;
   this.autodetectNewAccessoriesInterval = Number(config.autodetectNewAccessoriesInterval) || defaultAutodetectNewAccessoriesInterval;
   this.accessRequestInterval = Number(config.accessRequestInterval) || defaultAccessRequestInterval;
@@ -264,11 +257,18 @@ function SignalKPlatform(log, config, api) {
       // Initialie key value store 
       this.kfs = keyFileStorage.default(this.api.user.storagePath() + '/signalkaccess', true);
       
-      // If not security token explicitely in config, use saved security token, issued by Signal K access request
-      if (!config.securityToken) {
+      // If not security token given explicitely in config, use saved security token, issued by Signal K access request      
+      if (config.securityToken) {
+        this.securityToken = config.securityToken
+      } else {
         this.securityToken = this.kfs['accessToken']
+      }
+
+      this.wsOptions = {}
+      if (this.securityToken) {
         this.wsOptions.headers = { 'Authorization': 'JWT ' + this.securityToken }
       }
+      this.InitiateWebSocket();   // Start accessories value updating
 
       // Listen to event "didFinishLaunching", this means homebridge already finished loading cached accessories.
       // Platform Plugin should only register new accessory that doesn't exist in homebridge after this event.
@@ -309,7 +309,7 @@ function SignalKPlatform(log, config, api) {
         setInterval(platform.autodetectNewAccessories.bind(this), platform.autodetectNewAccessoriesInterval);
 
         // Periodically check status of Signal K access request
-        if ( this.config.accessRequest && this.kfs['requestState'] != 'APPROVED') {
+        if ( !config.securityToken && this.config.accessRequest ) {
           setTimeout(platform.accessRequest.bind(this), platform.signalkInitializeDelay);
           this.accessRequest = setInterval(platform.accessRequest.bind(this), platform.accessRequestInterval);
         }
@@ -971,7 +971,7 @@ SignalKPlatform.prototype.accessRequest = function() {
                 var response = JSON.parse(body);
                 
                 if ( response.state == 'PENDING' ) {
-                  this.log('Signal K access request accepted, now PENDING.');
+                  this.log('Signal K access request accepted, now PENDING');
                   this.log('Approve in Signal K > Security > Access Requests >', clientId);
 
                   this.kfs['clientId'] = clientId;
@@ -1003,7 +1003,7 @@ SignalKPlatform.prototype.accessRequest = function() {
                     
                     switch (response.state) {
                       case 'PENDING': 
-                        this.log('Signal K access request still PENDING.');
+                        this.log('Signal K access request still PENDING');
                         this.log('Approve in Signal K > Security > Access Requests >', this.kfs['clientId']);
                         break;
                         
