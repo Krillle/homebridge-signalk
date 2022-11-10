@@ -1,6 +1,6 @@
 const _ = require('lodash');
-// const keyFileStorage = require("key-file-storage");
-const kfs = require("key-file-storage")('/var/lib/homebridge');
+const keyFileStorage = require("key-file-storage");
+// const kfs = require("key-file-storage")('/var/lib/homebridge');
 
 var httpLog = require('debug')('homebridge-signalk:http');
 var wsLog = require('debug')('homebridge-signalk:websocket');
@@ -128,6 +128,7 @@ module.exports = function(homebridge) {
 // api may be null if launched from old homebridge version
 function SignalKPlatform(log, config, api) {
   log("SignalKPlatform Init");
+  log("kfs:", keyFileStorage);
 
   if (!(config)) { log ("No Signal K configuration found"); return; }
   if (!(config.host)) { log ("No Signal K host configuration found"); return; }
