@@ -311,7 +311,7 @@ function SignalKPlatform(log, config, api) {
         // Periodically check status of Signal K access request
         if ( this.config.accessRequest && this.kfs['requestStatus'] != 'APPROVED') {
           setTimeout(platform.accessRequest.bind(this), platform.signalkInitializeDelay);
-          setInterval(platform.accessRequest.bind(this), platform.accessRequestInterval);
+          this.accessRequest = setInterval(platform.accessRequest.bind(this), platform.accessRequestInterval);
         }
 
       }.bind(this));
@@ -971,7 +971,7 @@ SignalKPlatform.prototype.accessRequest = function() {
                 var response = JSON.parse(body);
                 
                 if ( response.state == 'PENDING' ) {
-                  this.log('Signal K access request response: accepted, status:',response.state);
+                  this.log('Signal K access request accepted, now PENDING. Approve in Signal K > Security > Access Requests.');
                   this.kfs['requestId'] = response.requestId;
                   this.kfs['requestState'] = response.state;
                   this.kfs['requestUrl'] = this.arHost + response.href;
@@ -995,25 +995,20 @@ SignalKPlatform.prototype.accessRequest = function() {
                 this.log('Signal K access request error:',error.message,'(Check Signal K server)');
               } else {
               
-                this.log('Signal K access request response:',response.statusCode);
                 switch (response.statusCode) {
-                  case 202:
-                    this.log('Signal K access request still PENDING. Signal K response: accepted, state',response.state);
-                    break;
-
                   case 200:
                     var response = JSON.parse(body);
                     
                     switch (response.state) {
                       case 'PENDING': 
-                        this.log('Signal K access request still PENDING. Signal K response: accepted, state',response.state);
+                        this.log('Signal K access request still PENDING. Approve in Signal K > Security > Access Requests.');
                         break;
                         
                       case 'COMPLETED': 
-                        this.log('Signal K access request result:',response.accessRequest.permission);
-                        
                         if ( response.accessRequest.permission == 'APPROVED' ) {
                           this.log('Signal K access request APPROVED');
+                          clearInterval(this.accessRequest);
+
                           this.kfs['requestState'] = response.accessRequest.permission;
                           this.kfs['accessToken'] = response.accessRequest.token;
                           this.kfs['requestUrl'] = this.arHost + response.href;
