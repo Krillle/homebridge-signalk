@@ -956,7 +956,7 @@ SignalKPlatform.prototype.accessRequest = function() {
   case null: case 'DENIED':
     
     let clientId = UUIDGen.generate(String(Date.now()));
-    let description = "Homebridge " + this.config.name;      
+    let description = "Homebridge" + this.config.name ? " " + this.config.name : "";      
     let headers = {'Content-Type': 'application/json'};
     let body = JSON.stringify({ "clientId": clientId, "description": description })
     
