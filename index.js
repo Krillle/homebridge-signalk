@@ -262,7 +262,6 @@ function SignalKPlatform(log, config, api) {
       this.api = api;
       
       // Initialie key value store 
-      platform.log("Create keyFileStorage at", this.api.user.storagePath() + '/signalkaccess' );      
       this.kfs = keyFileStorage.default(this.api.user.storagePath() + '/signalkaccess', true);
       
       // If not security token explicitely in config, use saved security token, issued by Signal K access request
@@ -309,7 +308,7 @@ function SignalKPlatform(log, config, api) {
         setInterval(platform.autodetectNewAccessories.bind(this), platform.autodetectNewAccessoriesInterval);
 
         // Periodically check status of Signal K access request
-        if ( this.config.accessRequest && this.kfs['requestStatus'] != 'APPROVED') {
+        if ( this.config.accessRequest && this.kfs['requestState'] != 'APPROVED') {
           setTimeout(platform.accessRequest.bind(this), platform.signalkInitializeDelay);
           this.accessRequest = setInterval(platform.accessRequest.bind(this), platform.accessRequestInterval);
         }
