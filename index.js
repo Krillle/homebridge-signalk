@@ -263,8 +263,7 @@ function SignalKPlatform(log, config, api) {
       
       // Initialie key value store 
       platform.log("Create keyFileStorage at", this.api.user.storagePath() );      
-      this.kfs = keyFileStorage.default('/var/lib/homebridge', true);
-//      this.kfs = keyFileStorage.default(this.api.user.storagePath, true);
+      this.kfs = keyFileStorage.default(this.api.user.storagePath(), true);
 
       // Listen to event "didFinishLaunching", this means homebridge already finished loading cached accessories.
       // Platform Plugin should only register new accessory that doesn't exist in homebridge after this event.
@@ -305,8 +304,10 @@ function SignalKPlatform(log, config, api) {
         setInterval(platform.autodetectNewAccessories.bind(this), platform.autodetectNewAccessoriesInterval);
 
         // Periodically check status of Signal K access request
-        if ((this.config.accessRequest || true ) && this.kfs['requestStatus'] != 'APPROVED') {
-          setTimeout(platform.accessRequest.bind(this), platform.accessRequestInterval);
+        this.log(">>>>> Prerequisits for Access Request", this.config.accessRequest, "kfs", this.kfs['requestStatus']);        
+        if (true || (this.config.accessRequest || true ) && this.kfs['requestStatus'] != 'APPROVED') {
+          this.log(">>>>> Starting timers for Access Request");        
+          setTimeout(platform.accessRequest.bind(this), platform.signalkInitializeDelay);
           setInterval(platform.accessRequest.bind(this), platform.accessRequestInterval);
         }
 
