@@ -972,7 +972,7 @@ SignalKPlatform.prototype.accessRequest = function() {
                 
                 if ( response.state == 'PENDING' ) {
                   this.log('Signal K access request accepted, now PENDING.');
-                  this.log('Approve in Signal K > Security > Access Requests >', requestId);
+                  this.log('Approve in Signal K > Security > Access Requests >', response.requestId);
 
                   this.kfs['requestId'] = response.requestId;
                   this.kfs['requestState'] = response.state;
