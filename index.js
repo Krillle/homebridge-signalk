@@ -954,7 +954,7 @@ SignalKPlatform.prototype.removeAccessory = function(accessory) {
 SignalKPlatform.prototype.accessRequest = function() {
 
   switch(this.kfs['requestState']) {
-  case null || 'DENIED':
+  case null: case 'DENIED':
     
     let clientId = UUIDGen.generate(Date.now());
     let description = "Homebridge " + this.config.name;      
@@ -1029,7 +1029,7 @@ SignalKPlatform.prototype.accessRequest = function() {
     break;
     
   default:
-    this.log('Unexpected Signal K access request state', this.kfs['requestState']);
+    this.log('Unexpected Signal K access request state:', this.kfs['requestState']);
     break;
 
   }
