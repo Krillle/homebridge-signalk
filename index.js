@@ -145,8 +145,8 @@ function SignalKPlatform(log, config, api) {
 
   this.wsOptions = {}
   if (config.securityToken) {
-    this.wsOptions.headers = { 'Authorization': 'JWT ' + config.securityToken }
     this.securityToken = config.securityToken
+    this.wsOptions.headers = { 'Authorization': 'JWT ' + this.securityToken }
   }
   this.InitiateWebSocket();   // Start accessories value updating
 
@@ -267,6 +267,7 @@ function SignalKPlatform(log, config, api) {
       // If not security token explicitely in config, use saved security token, issued by Signal K access request
       if (!config.securityToken) {
         this.securityToken = this.kfs['accessToken']
+        this.wsOptions.headers = { 'Authorization': 'JWT ' + this.securityToken }
       }
 
       // Listen to event "didFinishLaunching", this means homebridge already finished loading cached accessories.
@@ -959,7 +960,7 @@ SignalKPlatform.prototype.accessRequest = function() {
     let headers = {'Content-Type': 'application/json'};
     let body = JSON.stringify({ "clientId": clientId, "description": description })
     
-    this.log("Requesting access to Signal K server for " + clientId + " " + description + " at " + this.arl);
+    this.log("Requesting access to Signal K server for " + clientId + " " + description);
     request({'method': 'POST', 'url': this.arl, 'headers': headers, 'body': body},
             (error, response, body) => {
               if ( error ) {
@@ -970,7 +971,9 @@ SignalKPlatform.prototype.accessRequest = function() {
                 var response = JSON.parse(body);
                 
                 if ( response.state == 'PENDING' ) {
-                  this.log('Signal K access request accepted, now PENDING. Approve in Signal K > Security > Access Requests.');
+                  this.log('Signal K access request accepted, now PENDING.');
+                  this.log('Approve in Signal K > Security > Access Requests >', requestId);
+
                   this.kfs['requestId'] = response.requestId;
                   this.kfs['requestState'] = response.state;
                   this.kfs['requestUrl'] = this.arHost + response.href;
@@ -987,7 +990,6 @@ SignalKPlatform.prototype.accessRequest = function() {
     let requestId = this.kfs['requestId'];
     let requestUrl = this.kfs['requestUrl'];
     
-    this.log("Checking status Signal K access request " + requestId + " at " + requestUrl);
     request({url: requestUrl, headers: {} },
             (error, response, body) => {
               if ( error ) {
@@ -1000,7 +1002,8 @@ SignalKPlatform.prototype.accessRequest = function() {
                     
                     switch (response.state) {
                       case 'PENDING': 
-                        this.log('Signal K access request still PENDING. Approve in Signal K > Security > Access Requests.');
+                        this.log('Signal K access request still PENDING.');
+                        this.log('Approve in Signal K > Security > Access Requests >', requestId);
                         break;
                         
                       case 'COMPLETED': 
@@ -1013,6 +1016,7 @@ SignalKPlatform.prototype.accessRequest = function() {
                           this.kfs['requestUrl'] = this.arHost + response.href;
                           
                           this.securityToken = response.accessRequest.token;
+                          this.wsOptions.headers = { 'Authorization': 'JWT ' + this.securityToken }
                           
                         } else if ( response.accessRequest.permission == 'DENIED' ) {
                           this.log('Signal K access request DENIED');
