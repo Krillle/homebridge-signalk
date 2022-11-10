@@ -309,7 +309,7 @@ function SignalKPlatform(log, config, api) {
         setInterval(platform.autodetectNewAccessories.bind(this), platform.autodetectNewAccessoriesInterval);
 
         // Periodically check status of Signal K access request
-        if ( !config.securityToken && this.config.accessRequest ) {
+        if ( !this.securityToken && this.config.accessRequest ) {
           setTimeout(platform.accessRequest.bind(this), platform.signalkInitializeDelay);
           this.accessRequest = setInterval(platform.accessRequest.bind(this), platform.accessRequestInterval);
         }
