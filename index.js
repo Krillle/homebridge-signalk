@@ -141,7 +141,7 @@ function SignalKPlatform(log, config, api) {
   this.url = 'http' + (config.ssl ? 's' : '') + '://' + config.host + '/' + urlPath;
   this.wsl = 'ws' + (config.ssl ? 's' : '') + '://' + config.host + '/' + wsPath;
   this.arl = 'http' + (config.ssl ? 's' : '') + '://' + config.host + '/' + arPath;
-  this.arHost = this.arl = 'http' + (config.ssl ? 's' : '') + '://' + config.host;
+  this.arHost = 'http' + (config.ssl ? 's' : '') + '://' + config.host;
 
   this.wsOptions = {}
   if (config.securityToken) {
