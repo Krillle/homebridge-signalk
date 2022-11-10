@@ -262,8 +262,9 @@ function SignalKPlatform(log, config, api) {
       this.api = api;
       
       // Initialie key value store 
-      this.kfs = keyFileStorage.default(this.api.user.storagePath, true);
-      platform.log("Created keyFileStorage", this.api.user.storagePath);
+      platform.log("Create keyFileStorage at", this.api.user.storagePath);      
+      this.kfs = keyFileStorage.default('/var/lib/homebridge', true);
+//      this.kfs = keyFileStorage.default(this.api.user.storagePath, true);
 
       // Listen to event "didFinishLaunching", this means homebridge already finished loading cached accessories.
       // Platform Plugin should only register new accessory that doesn't exist in homebridge after this event.
