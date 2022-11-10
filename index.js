@@ -309,7 +309,6 @@ function SignalKPlatform(log, config, api) {
         setInterval(platform.autodetectNewAccessories.bind(this), platform.autodetectNewAccessoriesInterval);
 
         // Periodically check status of Signal K access request
-        this.log(">>>>> Prerequisits for Access Request", this.config.accessRequest, "kfs", this.kfs['requestStatus'], this.kfs['requestStatus'] != 'APPROVED');        
         if ( this.config.accessRequest && this.kfs['requestStatus'] != 'APPROVED') {
           this.log(">>>>> Starting timers for Access Request");        
           setTimeout(platform.accessRequest.bind(this), platform.signalkInitializeDelay);
@@ -955,7 +954,7 @@ SignalKPlatform.prototype.removeAccessory = function(accessory) {
 SignalKPlatform.prototype.accessRequest = function() {
 
   switch(this.kfs['requestState']) {
-  case '' || 'DENIED':
+  case null || 'DENIED':
     
     let clientId = UUIDGen.generate(Date.now());
     let description = "Homebridge " + this.config.name;      
@@ -1029,6 +1028,9 @@ SignalKPlatform.prototype.accessRequest = function() {
     )
     break;
     
+  default:
+    this.log('Unexpected Signal K access request state', this.kfs['requestState']);
+    break;
 
   }
 }
