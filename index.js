@@ -262,8 +262,8 @@ function SignalKPlatform(log, config, api) {
       this.api = api;
       
       // Initialie key value store 
-      platform.log("Create keyFileStorage at", this.api.user.storagePath() + 'signalkaccess' );      
-      this.kfs = keyFileStorage.default(this.api.user.storagePath() + 'signalkaccess', true);
+      platform.log("Create keyFileStorage at", this.api.user.storagePath() + '/signalkaccess' );      
+      this.kfs = keyFileStorage.default(this.api.user.storagePath() + '/signalkaccess', true);
       
       // If not security token explicitely in config, use saved security token, issued by Signal K access request
       if (!config.securityToken) {
