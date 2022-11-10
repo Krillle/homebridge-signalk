@@ -262,8 +262,8 @@ function SignalKPlatform(log, config, api) {
       this.api = api;
       
       // Initialie key value store 
-      platform.log("Create keyFileStorage at", this.api.user.storagePath() );      
-      this.kfs = keyFileStorage.default(this.api.user.storagePath(), true);
+      platform.log("Create keyFileStorage at", this.api.user.storagePath() + 'signalkaccess' );      
+      this.kfs = keyFileStorage.default(this.api.user.storagePath() + 'signalkaccess', true);
       
       // If not security token explicitely in config, use saved security token, issued by Signal K access request
       if (!config.securityToken) {
@@ -964,19 +964,19 @@ SignalKPlatform.prototype.accessRequest = function() {
     request({'method': 'POST', 'url': this.arl, 'headers': headers, 'body': body},
             (error, response, body) => {
               if ( error ) {
-                this.log('Signal K error:',error.message,'(Check Signal K server)');
+                this.log('Signal K access request error:',error.message,'(Check Signal K server)');
               } else if ( response.statusCode != 202 ) {
-                this.log('Signal K error unexpected response: response code',response.statusCode);
+                this.log('Signal K access request error unexpected response: response code',response.statusCode);
               } else {
                 var response = JSON.parse(body);
                 
                 if ( response.state == 'PENDING' ) {
-                  this.log('Signal K response: accepted, status:',response.state);
+                  this.log('Signal K access request response: accepted, status:',response.state);
                   this.kfs['requestId'] = response.requestId;
                   this.kfs['requestState'] = response.state;
-                  this.kfs[' requestUrl'] = this.arHost + response.href;
+                  this.kfs['requestUrl'] = this.arHost + response.href;
                 } else {
-                  this.log('Signal K response unexpected status:',response.state);
+                  this.log('Signal K access request response unexpected status:',response.state);
                 }
               }
             }
@@ -992,19 +992,19 @@ SignalKPlatform.prototype.accessRequest = function() {
     request({url: requestUrl, headers: {} },
             (error, response, body) => {
               if ( error ) {
-                this.log('Signal K error:',error.message,'(Check Signal K server)');
+                this.log('Signal K access request error:',error.message,'(Check Signal K server)');
               } else if ( response.statusCode == 202 ) {
-                this.log('Access request still PENDING. Signal K response: accepted, status',response.state);
+                this.log('Signal K access request still PENDING. Signal K response: accepted, status',response.state);
 
               } else if ( response.statusCode == 400 ) {
-                this.log('Access request FAILED', response.message);
+                this.log('Signal K access request FAILED', response.message);
                 kfs['requestState'] = 'FAILED';
                 
               } else if ( response.statusCode == 200 ) {
                 var response = JSON.parse(body);
                 
                 if ( response.accessRequest.permission == 'APPROVED' ) {
-                  this.log('Access request APPROVED');
+                  this.log('Signal K access request APPROVED');
                   this.kfs['requestState'] = response.accessRequest.permission;
                   this.kfs['accessToken'] = response.accessRequest.token;
                   this.kfs['requestUrl'] = this.arHost + response.href;
@@ -1012,7 +1012,7 @@ SignalKPlatform.prototype.accessRequest = function() {
                   this.securityToken = response.accessRequest.token;
                   
                 } else if ( response.accessRequest.permission == 'DENIED' ) {
-                  this.log('Access request DENIED');
+                  this.log('Signal K access request DENIED');
                   this.kfs['requestState'] = response.accessRequest.permission;
                   delete this.kfs['accessToken'];
                   delete this.kfs['requestUrl'];
@@ -1021,7 +1021,7 @@ SignalKPlatform.prototype.accessRequest = function() {
                   this.log('Signal K access request unexpected status:', response.accessRequest.permission);
                 }
               } else {
-                this.log('Signal K error unexpected response: response code',response.statusCode);
+                this.log('Signal K access request error unexpected response: response code',response.statusCode);
               }
             }
     )
