@@ -262,7 +262,7 @@ function SignalKPlatform(log, config, api) {
       this.api = api;
       
       // Initialie key value store 
-      platform.log("Create keyFileStorage at", this.api.user.storagePath);      
+      platform.log("Create keyFileStorage at", this.api.user.storagePath() );      
       this.kfs = keyFileStorage.default('/var/lib/homebridge', true);
 //      this.kfs = keyFileStorage.default(this.api.user.storagePath, true);
 
@@ -305,7 +305,7 @@ function SignalKPlatform(log, config, api) {
         setInterval(platform.autodetectNewAccessories.bind(this), platform.autodetectNewAccessoriesInterval);
 
         // Periodically check status of Signal K access request
-        if ((this.config.accessRequest || true ) && kfs['requestStatus'] != 'APPROVED') {
+        if ((this.config.accessRequest || true ) && this.kfs['requestStatus'] != 'APPROVED') {
           setTimeout(platform.accessRequest.bind(this), platform.accessRequestInterval);
           setInterval(platform.accessRequest.bind(this), platform.accessRequestInterval);
         }
