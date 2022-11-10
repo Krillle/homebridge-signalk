@@ -1004,24 +1004,38 @@ SignalKPlatform.prototype.accessRequest = function() {
                   case 200:
                     var response = JSON.parse(body);
                     
-                    this.log('Signal K access request result:',response.accessRequest.permission);
-                    if ( response.accessRequest.permission == 'APPROVED' ) {
-                      this.log('Signal K access request APPROVED');
-                      this.kfs['requestState'] = response.accessRequest.permission;
-                      this.kfs['accessToken'] = response.accessRequest.token;
-                      this.kfs['requestUrl'] = this.arHost + response.href;
-                      
-                      this.securityToken = response.accessRequest.token;
-                      
-                    } else if ( response.accessRequest.permission == 'DENIED' ) {
-                      this.log('Signal K access request DENIED');
-                      this.kfs['requestState'] = response.accessRequest.permission;
-                      delete this.kfs['accessToken'];
-                      delete this.kfs['requestUrl'];
-                     
-                    } else {
-                      this.log('Signal K access request unexpected status:', response.accessRequest.permission);
-                    }                  
+                    switch (response.state) {
+                      case 'PENDING': 
+                        this.log('Signal K access request still PENDING. Signal K response: accepted, state',response.state);
+                        break;
+                        
+                      case 'COMPLETED': 
+                        this.log('Signal K access request result:',response.accessRequest.permission);
+                        
+                        if ( response.accessRequest.permission == 'APPROVED' ) {
+                          this.log('Signal K access request APPROVED');
+                          this.kfs['requestState'] = response.accessRequest.permission;
+                          this.kfs['accessToken'] = response.accessRequest.token;
+                          this.kfs['requestUrl'] = this.arHost + response.href;
+                          
+                          this.securityToken = response.accessRequest.token;
+                          
+                        } else if ( response.accessRequest.permission == 'DENIED' ) {
+                          this.log('Signal K access request DENIED');
+                          this.kfs['requestState'] = response.accessRequest.permission;
+                          delete this.kfs['accessToken'];
+                          delete this.kfs['requestUrl'];
+                         
+                        } else {
+                          this.log('Signal K access request unexpected status:', response.accessRequest.permission);
+                        }
+                        break;
+                        
+                      default:
+                        this.log('Signal K access request error unexpected response state: ',response.state);
+                        break; 
+                   
+                    } 
                     break;
                     
                   case 400:
