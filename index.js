@@ -988,7 +988,6 @@ SignalKPlatform.prototype.accessRequest = function() {
 
   case 'PENDING':
   
-    let clientId = this.kfs['clientId'];
     let requestId = this.kfs['requestId'];
     let requestUrl = this.kfs['requestUrl'];
     
@@ -1005,7 +1004,7 @@ SignalKPlatform.prototype.accessRequest = function() {
                     switch (response.state) {
                       case 'PENDING': 
                         this.log('Signal K access request still PENDING.');
-                        this.log('Approve in Signal K > Security > Access Requests >', clientId);
+                        this.log('Approve in Signal K > Security > Access Requests >', this.kfs['clientId']);
                         break;
                         
                       case 'COMPLETED': 
