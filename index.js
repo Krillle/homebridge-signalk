@@ -264,6 +264,11 @@ function SignalKPlatform(log, config, api) {
       // Initialie key value store 
       platform.log("Create keyFileStorage at", this.api.user.storagePath() );      
       this.kfs = keyFileStorage.default(this.api.user.storagePath(), true);
+      
+      // If not security token explicitely in config, use saved security token, issued by Signal K access request
+      if (!config.securityToken) {
+        this.securityToken = this.kfs['accessToken']
+      }
 
       // Listen to event "didFinishLaunching", this means homebridge already finished loading cached accessories.
       // Platform Plugin should only register new accessory that doesn't exist in homebridge after this event.
@@ -304,8 +309,8 @@ function SignalKPlatform(log, config, api) {
         setInterval(platform.autodetectNewAccessories.bind(this), platform.autodetectNewAccessoriesInterval);
 
         // Periodically check status of Signal K access request
-        this.log(">>>>> Prerequisits for Access Request", this.config.accessRequest, "kfs", this.kfs['requestStatus']);        
-        if (true || (this.config.accessRequest || true ) && this.kfs['requestStatus'] != 'APPROVED') {
+        this.log(">>>>> Prerequisits for Access Request", this.config.accessRequest, "kfs", this.kfs['requestStatus'], this.kfs['requestStatus'] != 'APPROVED');        
+        if ( this.config.accessRequest && this.kfs['requestStatus'] != 'APPROVED') {
           this.log(">>>>> Starting timers for Access Request");        
           setTimeout(platform.accessRequest.bind(this), platform.signalkInitializeDelay);
           setInterval(platform.accessRequest.bind(this), platform.accessRequestInterval);
@@ -949,7 +954,7 @@ SignalKPlatform.prototype.removeAccessory = function(accessory) {
 // Request Signak K Access Token
 SignalKPlatform.prototype.accessRequest = function() {
 
-  switch(kfs['requestState']) {
+  switch(this.kfs['requestState']) {
   case '' || 'DENIED':
     
     let clientId = UUIDGen.generate(Date.now());
@@ -969,9 +974,9 @@ SignalKPlatform.prototype.accessRequest = function() {
                 
                 if ( response.state == 'PENDING' ) {
                   this.log('Signal K response: accepted, status:',response.state);
-                  kfs['requestId'] = response.requestId;
-                  kfs['requestState'] = response.state;
-                  kfs[' requestUrl'] = this.arHost + response.href;
+                  this.kfs['requestId'] = response.requestId;
+                  this.kfs['requestState'] = response.state;
+                  this.kfs[' requestUrl'] = this.arHost + response.href;
                 } else {
                   this.log('Signal K response unexpected status:',response.state);
                 }
@@ -982,8 +987,8 @@ SignalKPlatform.prototype.accessRequest = function() {
 
   case 'PENDING':
   
-    let requestId = kfs['requestId'];
-    let requestUrl = kfs['requestUrl'];
+    let requestId = this.kfs['requestId'];
+    let requestUrl = this.kfs['requestUrl'];
     
     this.log("Checking status Signal K access request " + requestID + " at " + requestUrl);
     request({url: requestUrl, headers: {} },
@@ -1002,15 +1007,17 @@ SignalKPlatform.prototype.accessRequest = function() {
                 
                 if ( response.accessRequest.permission == 'APPROVED' ) {
                   this.log('Access request APPROVED');
-                  kfs['requestState'] = response.accessRequest.permission;
-                  kfs['accessToken'] = response.accessRequest.token;
-                  kfs['requestUrl'] = this.arHost + response.href;
-
+                  this.kfs['requestState'] = response.accessRequest.permission;
+                  this.kfs['accessToken'] = response.accessRequest.token;
+                  this.kfs['requestUrl'] = this.arHost + response.href;
+                  
+                  this.securityToken = response.accessRequest.token;
+                  
                 } else if ( response.accessRequest.permission == 'DENIED' ) {
                   this.log('Access request DENIED');
-                  kfs['requestState'] = response.accessRequest.permission;
-                  delete kfs['accessToken'];
-                  delete kfs['requestUrl'];
+                  this.kfs['requestState'] = response.accessRequest.permission;
+                  delete this.kfs['accessToken'];
+                  delete this.kfs['requestUrl'];
                  
                 } else {
                   this.log('Signal K access request unexpected status:', response.accessRequest.permission);
