@@ -1,6 +1,5 @@
 const _ = require('lodash');
 const keyFileStorage = require("key-file-storage");
- // const kfs = require("key-file-storage")('/var/lib/homebridge');
 
 var httpLog = require('debug')('homebridge-signalk:http');
 var wsLog = require('debug')('homebridge-signalk:websocket');
@@ -129,10 +128,6 @@ module.exports = function(homebridge) {
 function SignalKPlatform(log, config, api) {
   log("SignalKPlatform Init");
   
-  log("kfs:", keyFileStorage);
-  log("kfs.default:", keyFileStorage.default);
-  keyFileStorage.then(log)
-
   if (!(config)) { log ("No Signal K configuration found"); return; }
   if (!(config.host)) { log ("No Signal K host configuration found"); return; }
 
@@ -267,8 +262,7 @@ function SignalKPlatform(log, config, api) {
       this.api = api;
       
       // Initialie key value store 
-//      const kfs = keyFileStorage(this.api.user.storagePath, true);
-//      this.kfs = kfs;
+      this.kfs = keyFileStorage.default(this.api.user.storagePath, true);
       platform.log("Created keyFileStorage", this.api.user.storagePath);
 
       // Listen to event "didFinishLaunching", this means homebridge already finished loading cached accessories.

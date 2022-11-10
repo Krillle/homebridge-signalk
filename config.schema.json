@@ -206,6 +206,7 @@
         "items": [
           "host",
           "ssl",
+          "accessRequest",
           "securityToken"
         ]
       },
@@ -217,6 +218,7 @@
           "removeDevicesNotPresent",
           "signalkInitializeDelay",
           "autodetectNewAccessoriesInterval",
+          "accessRequestInterval",
           "emptyBatteryVoltage",
           "fullBatteryVoltage",
           "lowBatteryVoltage",
