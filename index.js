@@ -257,13 +257,22 @@ function SignalKPlatform(log, config, api) {
       // Initialie key value store 
       this.kfs = keyFileStorage.default(this.api.user.storagePath() + '/signalkaccess', true);
       
+      // If not using Access Request reset potentially existing token or request data
+      if (!this.config.accessRequest) {
+        delete this.kfs['clientId'];
+        delete this.kfs['requestId'];
+        delete this.kfs['requestState'];
+        delete this.kfs['requestUrl'];
+        delete this.kfs['accessToken'];
+      } 
+      
       // If not security token given explicitely in config, use saved security token, issued by Signal K access request      
       if (config.securityToken) {
         this.securityToken = config.securityToken
       } else {
         this.securityToken = this.kfs['accessToken']
       }
-
+      
       this.wsOptions = {}
       if (this.securityToken) {
         this.wsOptions.headers = { 'Authorization': 'JWT ' + this.securityToken }

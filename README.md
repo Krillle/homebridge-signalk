@@ -123,7 +123,7 @@ The plugin awaits and accepts the following settings in the Homebridge `config.j
 ### Optional parameters and their default values if omitted:
 `"name" : "NameOfVessel"`  
 `"ssl": false` Set to `true` if Signal K server is awaiting connections via SSL  
-`”accessRequest”: true` Set to `true` if Homebridge shall use Access Requests to request and be granted access to the Signal K server  
+`”accessRequest”: true` Set to `true` to use Access Requests to request and be granted access to the Signal K server. To reset access request, set to `false` and restart Homebridge.  
 
 `”securityToken”: “explicit.signalk.token.here”` Signal K server security token (token entered here overrides token from access requests)  
 `"signalKInitializeDelay": "10000"` Delay before adding or removing devices to give Signal K time to build API tree (in milliseconds)  
