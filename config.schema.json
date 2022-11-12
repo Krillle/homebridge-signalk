@@ -26,7 +26,7 @@
                 "type": "boolean",
                 "default": true,
                 "required": false,
-                "description": "Check to use Signal K Access Requests to request and be granted access to the Signal K server. Approve access request in Signal K > Security > Access Requests. To reset access request, set to `false` and restart Homebridge."
+                "description": "Check to use Signal K Access Requests to request and be granted access to the Signal K server. Approve access request in Signal K > Security > Access Requests. To reset access request, uncheck and restart Homebridge."
             },
             "securityToken": {
                 "title": "Signal K Security Token",

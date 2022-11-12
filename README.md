@@ -174,4 +174,4 @@ To monitor communication with Signal K start HomeBridge with DEBUG environment v
 `DEBUG=homebridge-signalk:websocket` Signal K WebSocket updates  
 
 ## Support
-Use #homebridge channel on the [Signal K Slack](http://slack-invite.signalk.org/).
+Use #homebridge channel on the [Signal K Slack](http://slack-invite.signalk.org/).  
