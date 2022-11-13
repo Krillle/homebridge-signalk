@@ -21,13 +21,19 @@
                 "required": true,
                 "description": "Check if Signal K server is awaiting connections via SSL"
             },
-             "securityToken": {
+            "accessRequest": {
+                "title": "Use Access Requests to access Signal K server",
+                "type": "boolean",
+                "default": true,
+                "required": false,
+                "description": "Check to use Signal K Access Requests to request and be granted access to the Signal K server. Approve access request in Signal K > Security > Access Requests. To reset access request, uncheck and restart Homebridge."
+            },
+            "securityToken": {
                 "title": "Signal K Security Token",
                 "type": "string",
                 "required": false,
-                "description": "A token is needed to switch switches or dimmers. Create your token with signalk-generate-token."
+                "description": "Token entered here overrides token from access requests. Create token with signalk-generate-token."
             },
-
             "removeDevicesNotPresent": {
                "title": "Remove Devices Not Present in Signal K",
                "type": "boolean",
@@ -45,6 +51,12 @@
                 "type": "integer",
                 "placeholder": 900000,
               "description": "Interval to check for new devices (in milliseconds)"
+            },
+            "accessRequestInterval": {
+                "title": "Access Request Interval",
+                "type": "integer",
+                "placeholder": 60000,
+              "description": "Interval to check Signal K access request status (in milliseconds)"
             },
             "emptyBatteryVoltage": {
                 "title": "Empty Battery Voltage",
@@ -194,7 +206,7 @@
         "items": [
           "host",
           "ssl",
-          "securityToken"
+          "accessRequest"
         ]
       },
       {
@@ -202,9 +214,11 @@
         "title": "Optional Configuration",
         "expandable": true,
         "items": [
+          "securityToken",          
           "removeDevicesNotPresent",
           "signalkInitializeDelay",
           "autodetectNewAccessoriesInterval",
+          "accessRequestInterval",
           "emptyBatteryVoltage",
           "fullBatteryVoltage",
           "lowBatteryVoltage",

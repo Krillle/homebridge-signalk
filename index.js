@@ -1,4 +1,6 @@
 const _ = require('lodash');
+const keyFileStorage = require("key-file-storage");
+
 var httpLog = require('debug')('homebridge-signalk:http');
 var wsLog = require('debug')('homebridge-signalk:websocket');
 var request = require('request');
@@ -10,9 +12,11 @@ var Accessory, Service, Characteristic, UUIDGen;
 
 const urlPath = 'signalk/v1/api/vessels/self/'
 const wsPath = 'signalk/v1/stream?subscribe=none' // none will stream only the heartbeat, until the client issues subscribe messages in the WebSocket stream
+const arPath = 'signalk/v1/access/requests' // Signal K access request path
 
 const defaultsignalkInitializeDelay = 10000 // Delay before adding or removing devices to give Signal K time to build API tree (in milliseconds)
 const defaultAutodetectNewAccessoriesInterval = 15 * 60 * 1000 // Interval to check for new devices (in milliseconds)
+const defaultAccessRequestInterval = 1 * 60 * 1000 // Interval to check Signal K access request status (in milliseconds)
 
 // EmpirBus NXT + Venus GX switches and dimmer
 //
@@ -123,7 +127,7 @@ module.exports = function(homebridge) {
 // api may be null if launched from old homebridge version
 function SignalKPlatform(log, config, api) {
   log("SignalKPlatform Init");
-
+  
   if (!(config)) { log ("No Signal K configuration found"); return; }
   if (!(config.host)) { log ("No Signal K host configuration found"); return; }
 
@@ -136,16 +140,12 @@ function SignalKPlatform(log, config, api) {
 
   this.url = 'http' + (config.ssl ? 's' : '') + '://' + config.host + '/' + urlPath;
   this.wsl = 'ws' + (config.ssl ? 's' : '') + '://' + config.host + '/' + wsPath;
-
-  this.wsOptions = {}
-  if (config.securityToken) {
-    this.wsOptions.headers = { 'Authorization': 'JWT ' + config.securityToken }
-    this.securityToken = config.securityToken
-  }
-  this.InitiateWebSocket();   // Start accessories value updating
+  this.arl = 'http' + (config.ssl ? 's' : '') + '://' + config.host + '/' + arPath;
+  this.arHost = 'http' + (config.ssl ? 's' : '') + '://' + config.host;
 
   this.signalkInitializeDelay = Number(config.signalkInitializeDelay) || defaultsignalkInitializeDelay;
   this.autodetectNewAccessoriesInterval = Number(config.autodetectNewAccessoriesInterval) || defaultAutodetectNewAccessoriesInterval;
+  this.accessRequestInterval = Number(config.accessRequestInterval) || defaultAccessRequestInterval;
 
   this.percent = (body) => Math.min(Number(body) * 100,100);
   this.kelvinToCelsius = (body) =>  Number(body) - 273.15;
@@ -253,6 +253,31 @@ function SignalKPlatform(log, config, api) {
   if (api) {
       // Save the API object as plugin needs to register new accessory via this object
       this.api = api;
+      
+      // Initialie key value store 
+      this.kfs = keyFileStorage.default(this.api.user.storagePath() + '/signalkaccess', true);
+      
+      // If not using Access Request reset potentially existing token or request data
+      if (!this.config.accessRequest) {
+        delete this.kfs['clientId'];
+        delete this.kfs['requestId'];
+        delete this.kfs['requestState'];
+        delete this.kfs['requestUrl'];
+        delete this.kfs['accessToken'];
+      } 
+      
+      // If not security token given explicitely in config, use saved security token, issued by Signal K access request      
+      if (config.securityToken) {
+        this.securityToken = config.securityToken
+      } else {
+        this.securityToken = this.kfs['accessToken']
+      }
+      
+      this.wsOptions = {}
+      if (this.securityToken) {
+        this.wsOptions.headers = { 'Authorization': 'JWT ' + this.securityToken }
+      }
+      this.InitiateWebSocket();   // Start accessories value updating
 
       // Listen to event "didFinishLaunching", this means homebridge already finished loading cached accessories.
       // Platform Plugin should only register new accessory that doesn't exist in homebridge after this event.
@@ -291,6 +316,12 @@ function SignalKPlatform(log, config, api) {
 
         // Periodically check for new accessories in Signal K
         setInterval(platform.autodetectNewAccessories.bind(this), platform.autodetectNewAccessoriesInterval);
+
+        // Periodically check status of Signal K access request
+        if ( !this.securityToken && this.config.accessRequest ) {
+          setTimeout(platform.accessRequest.bind(this), platform.signalkInitializeDelay);
+          this.accessRequest = setInterval(platform.accessRequest.bind(this), platform.accessRequestInterval);
+        }
 
       }.bind(this));
   }
@@ -926,6 +957,115 @@ SignalKPlatform.prototype.removeAccessory = function(accessory) {
 }
 
 // - - - - - - - - - - - - - - - Signal K specific - - - - - - - - - - - - - -
+
+// Request Signak K Access Token
+SignalKPlatform.prototype.accessRequest = function() {
+
+  switch (this.kfs['requestState']) {
+  case null: case 'DENIED':
+    
+    let clientId = UUIDGen.generate(String(Date.now()));
+    let description = "Homebridge" + ( this.config.name ? (" " + this.config.name) : "" );      
+    let headers = {'Content-Type': 'application/json'};
+    let body = JSON.stringify({ "clientId": clientId, "description": description })
+    
+    this.log("Requesting access to Signal K server for " + clientId + " " + description);
+    request({'method': 'POST', 'url': this.arl, 'headers': headers, 'body': body},
+            (error, response, body) => {
+              if ( error ) {
+                this.log('Signal K access request error:',error.message,'(Check Signal K server)');
+              } else if ( response.statusCode != 202 ) {
+                this.log('Signal K access request error unexpected response: response code',response.statusCode);
+              } else {
+                var response = JSON.parse(body);
+                
+                if ( response.state == 'PENDING' ) {
+                  this.log('Signal K access request accepted, now PENDING');
+                  this.log('Approve in Signal K > Security > Access Requests >', clientId);
+
+                  this.kfs['clientId'] = clientId;
+                  this.kfs['requestId'] = response.requestId;
+                  this.kfs['requestState'] = response.state;
+                  this.kfs['requestUrl'] = this.arHost + response.href;
+                } else {
+                  this.log('Signal K access request response unexpected status:',response.state);
+                }
+              }
+            }
+    )
+    break;
+
+  case 'PENDING':
+  
+    let requestId = this.kfs['requestId'];
+    let requestUrl = this.kfs['requestUrl'];
+    
+    request({url: requestUrl, headers: {} },
+            (error, response, body) => {
+              if ( error ) {
+                this.log('Signal K access request error:',error.message,'(Check Signal K server)');
+              } else {
+              
+                switch (response.statusCode) {
+                  case 200:
+                    var response = JSON.parse(body);
+                    
+                    switch (response.state) {
+                      case 'PENDING': 
+                        this.log('Signal K access request still PENDING');
+                        this.log('Approve in Signal K > Security > Access Requests >', this.kfs['clientId']);
+                        break;
+                        
+                      case 'COMPLETED': 
+                        if ( response.accessRequest.permission == 'APPROVED' ) {
+                          this.log('Signal K access request APPROVED');
+                          clearInterval(this.accessRequest);
+
+                          this.kfs['requestState'] = response.accessRequest.permission;
+                          this.kfs['accessToken'] = response.accessRequest.token;
+                          this.kfs['requestUrl'] = this.arHost + response.href;
+                          
+                          this.securityToken = response.accessRequest.token;
+                          this.wsOptions.headers = { 'Authorization': 'JWT ' + this.securityToken }
+                          
+                        } else if ( response.accessRequest.permission == 'DENIED' ) {
+                          this.log('Signal K access request DENIED');
+                          this.kfs['requestState'] = response.accessRequest.permission;
+                          delete this.kfs['accessToken'];
+                          delete this.kfs['requestUrl'];
+                         
+                        } else {
+                          this.log('Signal K access request unexpected status:', response.accessRequest.permission);
+                        }
+                        break;
+                        
+                      default:
+                        this.log('Signal K access request error unexpected response state: ',response.state);
+                        break; 
+                   
+                    } 
+                    break;
+                    
+                  case 400:
+                    this.log('Signal K access request FAILED', response.message);
+                    kfs['requestState'] = 'FAILED';                    
+                    break; 
+
+                  default:
+                    this.log('Signal K access request error unexpected response: response code',response.statusCode);
+                    break; 
+                }
+              }
+            }
+    )
+    break;
+    
+  default:
+    this.log('Unexpected Signal K access request state:', this.kfs['requestState']);
+    break;
+
+  }
+}
 
 // Autodetect Devices
 // Autodetect from API all HomeKit suitable devices

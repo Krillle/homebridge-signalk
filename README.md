@@ -134,10 +134,12 @@ The plugin awaits and accepts the following settings in the Homebridge `config.j
 ### Optional parameters and their default values if omitted:
 `"name" : "NameOfVessel"`  
 `"ssl": false` Set to `true` if Signal K server is awaiting connections via SSL  
-`"securityToken": "your.signalk.token.here"` Signal K server security token (usually needed for write access)  
+`”accessRequest”: true` Set to `true` to use Access Requests to request and be granted access to the Signal K server. To reset access request, set to `false` and restart Homebridge.  
 
+`”securityToken”: “explicit.signalk.token.here”` Signal K server security token (token entered here overrides token from access requests)  
 `"signalKInitializeDelay": "10000"` Delay before adding or removing devices to give Signal K time to build API tree (in milliseconds)  
 `"autodetectNewAccessoriesInterval": "900000"` Interval to check for new devices (in milliseconds)  
+`”accessRequestInterval”: “60000”` Interval to check Signal K access request status (in milliseconds)  
 
 `"emptyBatteryVoltage" : "22.0"` Battery SOC shown as 0% (ignored if SOC is reported from battery)  
 `"lowBatteryVoltage" : "23.5"` Low battery warning if battery voltage is at or below  
@@ -183,4 +185,4 @@ To monitor communication with Signal K start HomeBridge with DEBUG environment v
 `DEBUG=homebridge-signalk:websocket` Signal K WebSocket updates  
 
 ## Support
-Use #homebridge channel on the [Signal K Slack](http://slack-invite.signalk.org/).
+Use #homebridge channel on the [Signal K Slack](http://slack-invite.signalk.org/).  
