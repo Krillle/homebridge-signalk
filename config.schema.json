@@ -55,7 +55,7 @@
             "fullBatteryVoltage": {
                 "title": "Full Battery Voltage",
                 "type": "number",
-                "placeholder": 26,
+                "placeholder": 25.8,
                 "description": "Voltage at which battery state of charge will be shown as 100% (ignored if SOC is reported from battery)"
             },
             "lowBatteryVoltage": {
