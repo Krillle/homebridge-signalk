@@ -19,7 +19,7 @@
       "name" : "MyBoat",
       "host": "127.0.0.1:3000",
       "ssl": false,
-      "accessRequest": "true",
+      "accessRequest": true,
 
       "securityToken": "explicit.signalk.token.here",
       "removeDevicesNotPresent": false,
