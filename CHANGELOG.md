@@ -1,5 +1,8 @@
 ## Change Log
 
+### v1.5.1 (2023/07/24 19:30)
+- chore: Adapted to corrected metadata in SignalK-Empirbus-plugin
+
 ### v1.5.0 (2022/11/12 18:15)
 - feature: Access Requests to request and be granted access to the Signal K server
 

@@ -127,7 +127,7 @@ module.exports = function(homebridge) {
 // api may be null if launched from old homebridge version
 function SignalKPlatform(log, config, api) {
   log("SignalKPlatform Init");
-  
+
   if (!(config)) { log ("No Signal K configuration found"); return; }
   if (!(config.host)) { log ("No Signal K host configuration found"); return; }
 
@@ -253,10 +253,10 @@ function SignalKPlatform(log, config, api) {
   if (api) {
       // Save the API object as plugin needs to register new accessory via this object
       this.api = api;
-      
-      // Initialie key value store 
+
+      // Initialie key value store
       this.kfs = keyFileStorage.default(this.api.user.storagePath() + '/signalkaccess', true);
-      
+
       // If not using Access Request reset potentially existing token or request data
       if (!this.config.accessRequest) {
         delete this.kfs['clientId'];
@@ -264,15 +264,15 @@ function SignalKPlatform(log, config, api) {
         delete this.kfs['requestState'];
         delete this.kfs['requestUrl'];
         delete this.kfs['accessToken'];
-      } 
-      
-      // If not security token given explicitely in config, use saved security token, issued by Signal K access request      
+      }
+
+      // If not security token given explicitely in config, use saved security token, issued by Signal K access request
       if (config.securityToken) {
         this.securityToken = config.securityToken
       } else {
         this.securityToken = this.kfs['accessToken']
       }
-      
+
       this.wsOptions = {}
       if (this.securityToken) {
         this.wsOptions.headers = { 'Authorization': 'JWT ' + this.securityToken }
@@ -963,12 +963,12 @@ SignalKPlatform.prototype.accessRequest = function() {
 
   switch (this.kfs['requestState']) {
   case null: case 'DENIED':
-    
+
     let clientId = UUIDGen.generate(String(Date.now()));
-    let description = "Homebridge" + ( this.config.name ? (" " + this.config.name) : "" );      
+    let description = "Homebridge" + ( this.config.name ? (" " + this.config.name) : "" );
     let headers = {'Content-Type': 'application/json'};
     let body = JSON.stringify({ "clientId": clientId, "description": description })
-    
+
     this.log("Requesting access to Signal K server for " + clientId + " " + description);
     request({'method': 'POST', 'url': this.arl, 'headers': headers, 'body': body},
             (error, response, body) => {
@@ -978,7 +978,7 @@ SignalKPlatform.prototype.accessRequest = function() {
                 this.log('Signal K access request error unexpected response: response code',response.statusCode);
               } else {
                 var response = JSON.parse(body);
-                
+
                 if ( response.state == 'PENDING' ) {
                   this.log('Signal K access request accepted, now PENDING');
                   this.log('Approve in Signal K > Security > Access Requests >', clientId);
@@ -996,27 +996,27 @@ SignalKPlatform.prototype.accessRequest = function() {
     break;
 
   case 'PENDING':
-  
+
     let requestId = this.kfs['requestId'];
     let requestUrl = this.kfs['requestUrl'];
-    
+
     request({url: requestUrl, headers: {} },
             (error, response, body) => {
               if ( error ) {
                 this.log('Signal K access request error:',error.message,'(Check Signal K server)');
               } else {
-              
+
                 switch (response.statusCode) {
                   case 200:
                     var response = JSON.parse(body);
-                    
+
                     switch (response.state) {
-                      case 'PENDING': 
+                      case 'PENDING':
                         this.log('Signal K access request still PENDING');
                         this.log('Approve in Signal K > Security > Access Requests >', this.kfs['clientId']);
                         break;
-                        
-                      case 'COMPLETED': 
+
+                      case 'COMPLETED':
                         if ( response.accessRequest.permission == 'APPROVED' ) {
                           this.log('Signal K access request APPROVED');
                           clearInterval(this.accessRequest);
@@ -1024,42 +1024,42 @@ SignalKPlatform.prototype.accessRequest = function() {
                           this.kfs['requestState'] = response.accessRequest.permission;
                           this.kfs['accessToken'] = response.accessRequest.token;
                           this.kfs['requestUrl'] = this.arHost + response.href;
-                          
+
                           this.securityToken = response.accessRequest.token;
                           this.wsOptions.headers = { 'Authorization': 'JWT ' + this.securityToken }
-                          
+
                         } else if ( response.accessRequest.permission == 'DENIED' ) {
                           this.log('Signal K access request DENIED');
                           this.kfs['requestState'] = response.accessRequest.permission;
                           delete this.kfs['accessToken'];
                           delete this.kfs['requestUrl'];
-                         
+
                         } else {
                           this.log('Signal K access request unexpected status:', response.accessRequest.permission);
                         }
                         break;
-                        
+
                       default:
                         this.log('Signal K access request error unexpected response state: ',response.state);
-                        break; 
-                   
-                    } 
+                        break;
+
+                    }
                     break;
-                    
+
                   case 400:
                     this.log('Signal K access request FAILED', response.message);
-                    kfs['requestState'] = 'FAILED';                    
-                    break; 
+                    kfs['requestState'] = 'FAILED';
+                    break;
 
                   default:
                     this.log('Signal K access request error unexpected response: response code',response.statusCode);
-                    break; 
+                    break;
                 }
               }
             }
     )
     break;
-    
+
   default:
     this.log('Unexpected Signal K access request state:', this.kfs['requestState']);
     break;
@@ -1105,15 +1105,15 @@ SignalKPlatform.prototype.processFullTree = function(body) {
             && !this.accessories.has(`${controlsPath}.${device}`)) {
 
         var path = `${controlsPath}.${device}`;
-        var fallbackName = ((controls[device].meta||{}).displayName||{}).value || (controls[device].name||{}).value || device;
+        var fallbackName = (controls[device].state.meta||{}).displayName || (controls[device].name||{}).value || device;  // (controls[device].name||{}).value for downward compatibility
         var displayName = this.getName(path, fallbackName);
 
         if (device.slice(0,empirBusIdentifier.length) == empirBusIdentifier) {
           httpLog(`Preparing EmpirBus NXT device: ${device} \n %O`, controls[device]);
           var deviceType = this.getDeviceType(`${controlsPath}.${device}`) || (controls[device].type||{}).value || "switch";
-          var manufacturer = (((controls[device].meta||{}).manufacturer||{}).name||{}).value || "EmpirBus";
-          var model = (((controls[device].meta||{}).manufacturer||{}).model||{}).value || "NXT DCM";
-          var serialnumber = (controls[device].name||{}).value || device;
+          var manufacturer = (((controls[device].state||{}).meta||{}).manufacturer||{}).name || "EmpirBus";
+          var model = (((controls[device].state||{}).meta||{}).manufacturer||{}).model || "NXT DCM";
+          var serialnumber = ((controls[device].state||{}).meta||{}).displayName || device;
 
           // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
           httpLog(`Adding EmpirBus NXT device: \n accessoryName: ${displayName}, identifier: ${device}, path: ${path} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${serialnumber} \n categoryPath: ${controlsPath}, deviceType: ${deviceType}`);
@@ -1122,8 +1122,8 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         if (device.slice(0,venusRelaisIdentifier.length) == venusRelaisIdentifier) {
           httpLog(`Preparing Venus GX device: ${device} \n %O`, controls[device]);
           var deviceType = "switch";
-          var manufacturer = (((controls[device].meta||{}).manufacturer||{}).name||{}).value || "Victron Energy";
-          var model = (((controls[device].meta||{}).manufacturer||{}).model||{}).value || "Venus GX";
+          var manufacturer = (((controls[device].state||{}).meta||{}).manufacturer||{}).name || "Victron Energy";
+          var model = (((controls[device].state||{}).meta||{}).manufacturer||{}).model || "Venus GX";
 
           // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
           httpLog(`Adding Venus GX device: \n accessoryName: ${displayName}, identifier: ${device}, path: ${path} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${device} \n categoryPath: ${controlsPath}, deviceType: ${deviceType}`);
@@ -1132,8 +1132,8 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         if (controls[device].state) { // Device is considered a switch if it has electrical.switches.<indentifier>.state
           httpLog(`Preparing generic device: ${device} \n %O`, controls[device]);
           var deviceType = "switch";
-          var manufacturer = (((controls[device].meta||{}).manufacturer||{}).name||{}).value || "Unkown";
-          var model = (((controls[device].meta||{}).manufacturer||{}).model||{}).value || "Generic Switch";
+          var manufacturer = (((controls[device].state||{}).meta||{}).manufacturer||{}).name || "Unkown";
+          var model = (((controls[device].state||{}).meta||{}).manufacturer||{}).model || "Generic Switch";
 
           // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
           httpLog(`Adding generic device: \n accessoryName: ${displayName}, identifier: ${device}, path: ${path} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${device} \n categoryPath: ${controlsPath}, deviceType: ${deviceType}`);
@@ -1173,7 +1173,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
         if (this.noignoredPath(path)
               && !this.accessories.has(path) ) {
 
-          var displayName = _.get(instance, "meta.displayName") || this.getName(path, tankType);
+          var displayName = _.get(instance, "currentLevel.meta.displayName") || this.getName(path, tankType);
           var deviceType = 'tank';
           var manufacturer = "NMEA";
           var model = tankType;
