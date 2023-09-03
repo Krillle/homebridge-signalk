@@ -1,5 +1,8 @@
 ## Change Log
 
+### v1.5.2 (2023/07/29 17:30)
+- fix: fixed TypeError: Cannot read properties of undefined (reading 'meta')
+
 ### v1.5.1 (2023/07/24 19:30)
 - chore: Adapted to corrected metadata in SignalK-Empirbus-plugin
 

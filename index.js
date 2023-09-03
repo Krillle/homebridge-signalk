@@ -1105,7 +1105,7 @@ SignalKPlatform.prototype.processFullTree = function(body) {
             && !this.accessories.has(`${controlsPath}.${device}`)) {
 
         var path = `${controlsPath}.${device}`;
-        var fallbackName = (controls[device].state.meta||{}).displayName || (controls[device].name||{}).value || device;  // (controls[device].name||{}).value for downward compatibility
+        var fallbackName = ((controls[device].state||{}).meta||{}).displayName || (controls[device].name||{}).value || device;  // (controls[device].name||{}).value for downward compatibility
         var displayName = this.getName(path, fallbackName);
 
         if (device.slice(0,empirBusIdentifier.length) == empirBusIdentifier) {
