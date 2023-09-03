@@ -1101,10 +1101,9 @@ SignalKPlatform.prototype.processFullTree = function(body) {
   var controls = _.get(tree, controlsPath);
   if ( controls ) {
     _.keys(controls).forEach(device => {
-      if (this.noignoredPath(`${controlsPath}.${device}`)
-            && !this.accessories.has(`${controlsPath}.${device}`)) {
+      var path = `${controlsPath}.${device}`;
+      if (this.noignoredPath(path) && !this.accessories.has(path)) {
 
-        var path = `${controlsPath}.${device}`;
         var fallbackName = ((controls[device].state||{}).meta||{}).displayName || (controls[device].name||{}).value || device;  // (controls[device].name||{}).value for downward compatibility
         var displayName = this.getName(path, fallbackName);
 
@@ -1128,16 +1127,28 @@ SignalKPlatform.prototype.processFullTree = function(body) {
           // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
           httpLog(`Adding Venus GX device: \n accessoryName: ${displayName}, identifier: ${device}, path: ${path} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${device} \n categoryPath: ${controlsPath}, deviceType: ${deviceType}`);
           this.addAccessory(displayName, device, path, manufacturer, model, device, controlsPath, deviceType);
-        } else
-        if (controls[device].state) { // Device is considered a switch if it has electrical.switches.<indentifier>.state
-          httpLog(`Preparing generic device: ${device} \n %O`, controls[device]);
-          var deviceType = "switch";
-          var manufacturer = (((controls[device].state||{}).meta||{}).manufacturer||{}).name || "Unkown";
-          var model = (((controls[device].state||{}).meta||{}).manufacturer||{}).model || "Generic Switch";
+        }
+        else {
+          let devices = this.findDevices(controls[device]); // Device is considered a switch or dimmer if it has electrical.switches.<any indentifier path>.state
+          devices.forEach(({ deviceControl, devicePath }) => {
 
-          // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
-          httpLog(`Adding generic device: \n accessoryName: ${displayName}, identifier: ${device}, path: ${path} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${device} \n categoryPath: ${controlsPath}, deviceType: ${deviceType}`);
-          this.addAccessory(displayName, device, path, manufacturer, model, device, controlsPath, deviceType);
+            path = `${controlsPath}.${device}.${devicePath}`;
+            if (this.noignoredPath(path) && !this.accessories.has(path)) {
+              fallbackName = ((deviceControl.state||{}).meta||{}).displayName || `${device} ${devicePath}`;
+              displayName = this.getName(path, fallbackName);
+
+              httpLog(`Preparing generic device: ${path} \n %O`, deviceControl);
+              let deviceType = ('dimmingLevel' in deviceControl) ? "dimmer" : "switch";
+              let manufacturer = (((deviceControl.state||{}).meta||{}).manufacturer||{}).name || "Unkown";
+              let model = (((deviceControl.state||{}).meta||{}).manufacturer||{}).model || `Generic ${deviceType.charAt(0).toUpperCase() + deviceType.slice(1)}`;
+              let identifier = `${device}/${devicePath}`;
+              let serialnumber = `${device}.${devicePath}`;
+
+              // addAccessory = function(accessoryName, identifier, path, manufacturer, model, serialnumber, categoryPath, deviceType)
+              httpLog(`Adding generic device: \n accessoryName: ${displayName}, identifier: ${identifier}, path: ${path} \n manufacturer: ${manufacturer}, model: ${model}, serialnumber: ${serialnumber} \n categoryPath: ${controlsPath}, deviceType: ${deviceType}`);
+              this.addAccessory(displayName, identifier, path, manufacturer, model, serialnumber, controlsPath, deviceType);
+            }
+          })
         }
       }
     })
@@ -1298,6 +1309,23 @@ SignalKPlatform.prototype.noignoredPath = function(path) {
 SignalKPlatform.prototype.getDeviceType = function(path) {
   return (this.config.deviceTypes && this.config.deviceTypes[path]) || false
 }
+
+//Returns all devices with electrical.switches.xxx. ... .yyy.state
+SignalKPlatform.prototype.findDevices = function(obj, devices = [], currentPath = '') {
+  if (obj && typeof obj === 'object') {
+    if ('state' in obj) {
+      devices.push({ deviceControl: obj, devicePath: currentPath });  // Add the object and its path
+    }
+    for (let key in obj) {
+      let newPath = currentPath ? `${currentPath}.${key}` : key;
+      this.findDevices(obj[key], devices, newPath);
+    }
+  }
+  return devices;
+};
+
+
+
 
 // - - - - - - - Read and write Signal K API keys functions - - - - - - -
 

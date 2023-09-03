@@ -1,5 +1,8 @@
 ## Change Log
 
+### v1.6.0 (2023/09/03 17:300)
+- feature: add support for Shelly switches and dimmers
+
 ### v1.5.2 (2023/07/29 17:30)
 - fix: fixed TypeError: Cannot read properties of undefined (reading 'meta')
 
