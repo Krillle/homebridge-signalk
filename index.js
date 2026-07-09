@@ -1,3 +1,11 @@
+// -- Breaking changes in Homebridge 2.0 --
+// Use of enums off the Characteristic class is no longer supported:
+//   Instead of const Units = Characteristic.Units; you will need to use const Units = api.hap.Units;
+//   Instead of const Formats = Characteristic.Formats; you will need to use const Formats = api.hap.Formats;
+//   Instead of const Perms = Characteristic.Perms; you will need to use const Perms = api.hap.Perms;
+//
+//   For deprecated storagePath switch to HAPStorage.setCustomStoragePath
+
 const _ = require('lodash');
 const keyFileStorage = require("key-file-storage");
 
@@ -120,6 +128,25 @@ module.exports = function(homebridge) {
   // For platform plugin to be considered as dynamic platform plugin,
   // registerPlatform(pluginName, platformName, constructor, dynamic), dynamic must be true
   homebridge.registerPlatform("homebridge-signalk", "SignalK", SignalKPlatform, true);
+}
+
+SignalKPlatform.prototype.getOrAddService = function(accessory, service, serviceName) {
+  if (!service) {
+    throw new Error(`Homebridge service ${serviceName} is not available`);
+  }
+
+  var accessoryService = accessory.getService(service);
+
+  if (!accessoryService) {
+    this.log(`Adding missing ${serviceName || service.name} service to cached accessory ${accessory.displayName}`);
+    accessoryService = accessory.addService(service, accessory.displayName);
+  }
+
+  return accessoryService;
+}
+
+SignalKPlatform.prototype.getBatteryService = function() {
+  return Service.BatteryService || Service.Battery;
 }
 
 // Platform constructor
@@ -537,17 +564,17 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
       break;
     case 'tank':
       newAccessory.addService(Service.HumiditySensor, accessoryName) // Workaround to show tank level
-      newAccessory.addService(Service.BatteryService, accessoryName) // Used for low tank level warning
+      newAccessory.addService(this.getBatteryService(), accessoryName) // Used for low tank level warning
       this.addTankServices(newAccessory);
       break;
     case 'battery':
       newAccessory.addService(Service.HumiditySensor, accessoryName) // Used as main accessory
-      newAccessory.addService(Service.BatteryService, accessoryName)
+      newAccessory.addService(this.getBatteryService(), accessoryName)
       this.addVoltageBatteryServices(newAccessory);
       break;
     case 'batterySOC':
       newAccessory.addService(Service.HumiditySensor, accessoryName) // Used as main accessory
-      newAccessory.addService(Service.BatteryService, accessoryName)
+      newAccessory.addService(this.getBatteryService(), accessoryName)
       this.addSOCBatteryServices(newAccessory);
       break;
     case 'leakSensor':
@@ -569,6 +596,7 @@ SignalKPlatform.prototype.addAccessory = function(accessoryName, identifier, pat
 // Add services for Dimmer to existing accessory object
 SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   var platform = this;
+  var lightbulbService = this.getOrAddService(accessory, Service.Lightbulb, 'Lightbulb');
 
   accessory.on('identify', function(paired, callback) {
     platform.log(`Identifying Dimmer Accessory ${accessory.displayName} by off/on/off cycle`);
@@ -593,7 +621,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   var dataPath = accessory.context.path + '.state'
   var subscriptionList = [];
 
-  accessory.getService(Service.Lightbulb)
+  lightbulbService
   .getCharacteristic(Characteristic.On)
   .on('get', this.getStatus.bind(this, dataPath, this.onOffCondition))
   .on('set', function(value, callback) {
@@ -603,7 +631,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   })
 
   subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.Lightbulb).getCharacteristic(Characteristic.On)
+  subscription.characteristic = lightbulbService.getCharacteristic(Characteristic.On)
   subscription.conversion = this.onOffCondition
   subscriptionList.push(subscription)
 
@@ -617,7 +645,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   dataPath = accessory.context.path + '.dimmingLevel'
   subscriptionList = [];
 
-  accessory.getService(Service.Lightbulb)
+  lightbulbService
   .getCharacteristic(Characteristic.Brightness)
   .on('get', this.getStatus.bind(this, dataPath, this.percent))
   .on('set', function(value, callback) {
@@ -627,7 +655,7 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
   });
 
   subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.Lightbulb).getCharacteristic(Characteristic.Brightness)
+  subscription.characteristic = lightbulbService.getCharacteristic(Characteristic.Brightness)
   subscription.conversion = this.percent
   subscriptionList.push(subscription)
 
@@ -642,11 +670,12 @@ SignalKPlatform.prototype.addDimmerServices = function(accessory) {
 // Add services for Switch to existing accessory object
 SignalKPlatform.prototype.addSwitchServices = function(accessory) {
   var platform = this;
+  var switchService = this.getOrAddService(accessory, Service.Switch, 'Switch');
 
   const dataPath = accessory.context.path + '.state'
   var subscriptionList = [];
 
-  accessory.getService(Service.Switch)
+  switchService
   .getCharacteristic(Characteristic.On)
   .on('get', this.getStatus.bind(this, dataPath, this.onOffCondition))
   .on('set', function(value, callback) {
@@ -656,7 +685,7 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
   });
 
   subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.Switch).getCharacteristic(Characteristic.On)
+  subscription.characteristic = switchService.getCharacteristic(Characteristic.On)
   subscription.conversion = this.onOffCondition
   subscriptionList.push(subscription)
 
@@ -670,14 +699,15 @@ SignalKPlatform.prototype.addSwitchServices = function(accessory) {
 
 // Add services for Temperature Sensor to existing accessory object
 SignalKPlatform.prototype.addTemperatureServices = function(accessory) {
+  var temperatureService = this.getOrAddService(accessory, Service.TemperatureSensor, 'TemperatureSensor');
   var subscriptionList = [];
 
-  accessory.getService(Service.TemperatureSensor)
+  temperatureService
   .getCharacteristic(Characteristic.CurrentTemperature)
   .on('get', this.getStatus.bind(this, accessory.context.path, this.kelvinToCelsius));
 
   subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.TemperatureSensor).getCharacteristic(Characteristic.CurrentTemperature)
+  subscription.characteristic = temperatureService.getCharacteristic(Characteristic.CurrentTemperature)
   subscription.conversion = this.kelvinToCelsius
   subscriptionList.push(subscription)
 
@@ -691,14 +721,15 @@ SignalKPlatform.prototype.addTemperatureServices = function(accessory) {
 
 // Add services for Humidity Sensor to existing accessory object
 SignalKPlatform.prototype.addHumidityServices = function(accessory) {
+  var humidityService = this.getOrAddService(accessory, Service.HumiditySensor, 'HumiditySensor');
   var subscriptionList = [];
 
-  accessory.getService(Service.HumiditySensor)
+  humidityService
   .getCharacteristic(Characteristic.CurrentRelativeHumidity)
   .on('get', this.getStatus.bind(this, accessory.context.path, this.percent));
 
   subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.HumiditySensor).getCharacteristic(Characteristic.CurrentRelativeHumidity)
+  subscription.characteristic = humidityService.getCharacteristic(Characteristic.CurrentRelativeHumidity)
   subscription.conversion = this.percent
   subscriptionList.push(subscription)
 
@@ -713,32 +744,34 @@ SignalKPlatform.prototype.addHumidityServices = function(accessory) {
 // Add services for Tanks (mapped as Humidity Sensor) to existing accessory object
 SignalKPlatform.prototype.addTankServices = function(accessory) {
   const dataPath = accessory.context.path + '.currentLevel'
+  var humidityService = this.getOrAddService(accessory, Service.HumiditySensor, 'HumiditySensor');
+  var batteryService = this.getOrAddService(accessory, this.getBatteryService(), 'Battery');
   var subscriptionList = [];
 
-  accessory.getService(Service.HumiditySensor)   // Workaround, as Home app does not show tank levels
+  humidityService   // Workaround, as Home app does not show tank levels
   .getCharacteristic(Characteristic.CurrentRelativeHumidity)
   .on('get', this.getStatus.bind(this, dataPath, this.percent));
 
   subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.HumiditySensor).getCharacteristic(Characteristic.CurrentRelativeHumidity)
+  subscription.characteristic = humidityService.getCharacteristic(Characteristic.CurrentRelativeHumidity)
   subscription.conversion = this.percent
   subscriptionList.push(subscription)
 
-  accessory.getService(Service.BatteryService)
+  batteryService
   .getCharacteristic(Characteristic.StatusLowBattery)
   .on('get', this.getStatus.bind(this, dataPath, this.tankWarnCondition[accessory.context.model]));
 
   subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.StatusLowBattery)
+  subscription.characteristic = batteryService.getCharacteristic(Characteristic.StatusLowBattery)
   subscription.conversion = this.tankWarnCondition[accessory.context.model]
   subscriptionList.push(subscription)
 
-  accessory.getService(Service.BatteryService)
+  batteryService
   .getCharacteristic(Characteristic.BatteryLevel)
   .on('get', this.getStatus.bind(this, dataPath, this.percent));
 
   subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.BatteryLevel)
+  subscription.characteristic = batteryService.getCharacteristic(Characteristic.BatteryLevel)
   subscription.conversion = this.percent
   subscriptionList.push(subscription)
 
@@ -753,41 +786,43 @@ SignalKPlatform.prototype.addTankServices = function(accessory) {
 // Add services for Batteries (with Humidity Sensor as main accessory) to existing accessory object
 SignalKPlatform.prototype.addVoltageBatteryServices = function(accessory) {
   var dataPath = accessory.context.path + '.voltage'
+  var humidityService = this.getOrAddService(accessory, Service.HumiditySensor, 'HumiditySensor');
+  var batteryService = this.getOrAddService(accessory, this.getBatteryService(), 'Battery');
   var subscriptionList = [];
 
-  accessory.getService(Service.HumiditySensor)   // Mapped to use humidity sensor to show SOC in Home app
+  humidityService   // Mapped to use humidity sensor to show SOC in Home app
   .getCharacteristic(Characteristic.CurrentRelativeHumidity)
   .on('get', this.getStatus.bind(this, dataPath, this.batteryCondition.soc));
 
   subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.HumiditySensor).getCharacteristic(Characteristic.CurrentRelativeHumidity)
+  subscription.characteristic = humidityService.getCharacteristic(Characteristic.CurrentRelativeHumidity)
   subscription.conversion = this.batteryCondition.soc
   subscriptionList.push(subscription)
 
-  accessory.getService(Service.BatteryService)
+  batteryService
   .getCharacteristic(Characteristic.BatteryLevel)
   .on('get', this.getStatus.bind(this, dataPath, this.batteryCondition.soc));
 
   subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.BatteryLevel)
+  subscription.characteristic = batteryService.getCharacteristic(Characteristic.BatteryLevel)
   subscription.conversion = this.batteryCondition.soc
   subscriptionList.push(subscription)
 
-  accessory.getService(Service.BatteryService)
+  batteryService
   .getCharacteristic(Characteristic.StatusLowBattery)
   .on('get', this.getStatus.bind(this, dataPath, this.batteryCondition.low));
 
   subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.StatusLowBattery)
+  subscription.characteristic = batteryService.getCharacteristic(Characteristic.StatusLowBattery)
   subscription.conversion = this.batteryCondition.low
   subscriptionList.push(subscription)
 
-  accessory.getService(Service.BatteryService)
+  batteryService
   .getCharacteristic(Characteristic.ChargingState)
   .on('get', this.getStatus.bind(this, dataPath, this.batteryCondition.chargingVoltage));
 
   subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.ChargingState)
+  subscription.characteristic = batteryService.getCharacteristic(Characteristic.ChargingState)
   subscription.conversion = this.batteryCondition.chargingVoltage
   subscriptionList.push(subscription)
 
@@ -802,23 +837,25 @@ SignalKPlatform.prototype.addVoltageBatteryServices = function(accessory) {
 // Add services for SOC Batteries (with Humidity Sensor as main accessory) to existing accessory object
 SignalKPlatform.prototype.addSOCBatteryServices = function(accessory) {
   var dataPath = accessory.context.path + '.capacity.stateOfCharge'
+  var humidityService = this.getOrAddService(accessory, Service.HumiditySensor, 'HumiditySensor');
+  var batteryService = this.getOrAddService(accessory, this.getBatteryService(), 'Battery');
   var subscriptionList = [];
 
-  accessory.getService(Service.HumiditySensor)   // Mapped to use humidity sensor to show SOC in Home app
+  humidityService   // Mapped to use humidity sensor to show SOC in Home app
   .getCharacteristic(Characteristic.CurrentRelativeHumidity)
   .on('get', this.getStatus.bind(this, dataPath, this.percent));
 
   subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.HumiditySensor).getCharacteristic(Characteristic.CurrentRelativeHumidity)
+  subscription.characteristic = humidityService.getCharacteristic(Characteristic.CurrentRelativeHumidity)
   subscription.conversion = this.percent
   subscriptionList.push(subscription)
 
-  accessory.getService(Service.BatteryService)
+  batteryService
   .getCharacteristic(Characteristic.BatteryLevel)
   .on('get', this.getStatus.bind(this, dataPath, this.percent));
 
   subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.BatteryLevel)
+  subscription.characteristic = batteryService.getCharacteristic(Characteristic.BatteryLevel)
   subscription.conversion = this.percent
   subscriptionList.push(subscription)
 
@@ -832,12 +869,12 @@ SignalKPlatform.prototype.addSOCBatteryServices = function(accessory) {
   dataPath = accessory.context.path + '.current'
   subscriptionList = [];
 
-  accessory.getService(Service.BatteryService)
+  batteryService
   .getCharacteristic(Characteristic.ChargingState)
   .on('get', this.getStatus.bind(this, dataPath, this.batteryCondition.chargingCurrent));
 
   subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.ChargingState)
+  subscription.characteristic = batteryService.getCharacteristic(Characteristic.ChargingState)
   subscription.conversion = this.batteryCondition.chargingCurrent
   subscriptionList.push(subscription)
 
@@ -851,21 +888,21 @@ SignalKPlatform.prototype.addSOCBatteryServices = function(accessory) {
   dataPath = accessory.context.path + '.voltage'
   subscriptionList = [];
 
-  accessory.getService(Service.BatteryService)
+  batteryService
   .getCharacteristic(Characteristic.StatusLowBattery)
   .on('get', this.getStatus.bind(this, dataPath, this.batteryCondition.low));
 
   subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.StatusLowBattery)
+  subscription.characteristic = batteryService.getCharacteristic(Characteristic.StatusLowBattery)
   subscription.conversion = this.batteryCondition.low
   subscriptionList.push(subscription)
 
-  // accessory.getService(Service.BatteryService)
+  // accessory.getService(Service.Battery)
   // .getCharacteristic(Characteristic.ChargingState)
   // .on('get', this.getStatus.bind(this, dataPath, this.batteryCondition.chargingVoltage));
   //
   // subscription = new Object ();
-  // subscription.characteristic = accessory.getService(Service.BatteryService).getCharacteristic(Characteristic.ChargingState)
+  // subscription.characteristic = accessory.getService(Service.Battery).getCharacteristic(Characteristic.ChargingState)
   // subscription.conversion = this.batteryCondition.chargingVoltage
   // subscriptionList.push(subscription)
 
@@ -880,14 +917,15 @@ SignalKPlatform.prototype.addSOCBatteryServices = function(accessory) {
 // Add services for Leak Sensor to existing accessory object
 SignalKPlatform.prototype.addLeakServices = function(accessory) {
   const dataPath = accessory.context.path + '.state'
+  var leakService = this.getOrAddService(accessory, Service.LeakSensor, 'LeakSensor');
   var subscriptionList = [];
 
-  accessory.getService(Service.LeakSensor)
+  leakService
   .getCharacteristic(Characteristic.LeakDetected)
   .on('get', this.getStatus.bind(this, dataPath, this.onOffCondition))
 
   subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.LeakSensor).getCharacteristic(Characteristic.LeakDetected)
+  subscription.characteristic = leakService.getCharacteristic(Characteristic.LeakDetected)
   subscription.conversion = this.onOffCondition
   subscriptionList.push(subscription)
 
@@ -901,16 +939,17 @@ SignalKPlatform.prototype.addLeakServices = function(accessory) {
 // Add services for Contact Sensor to existing accessory object
 SignalKPlatform.prototype.addContactServices = function(accessory) {
   const dataPath = accessory.context.path
+  var contactService = this.getOrAddService(accessory, Service.ContactSensor, 'ContactSensor');
   var subscriptionList = this.updateSubscriptions.get(dataPath) || [];
 
   var conversion = (contactSensors.get(accessory.context.identifier) || {}).conversion  || ((value) => false);
 
-  accessory.getService(Service.ContactSensor)
+  contactService
   .getCharacteristic(Characteristic.ContactSensorState)
   .on('get', this.getStatus.bind(this, dataPath, conversion))
 
   subscription = new Object ();
-  subscription.characteristic = accessory.getService(Service.ContactSensor).getCharacteristic(Characteristic.ContactSensorState)
+  subscription.characteristic = contactService.getCharacteristic(Characteristic.ContactSensorState)
   subscription.conversion = conversion
   subscriptionList.push(subscription)
 

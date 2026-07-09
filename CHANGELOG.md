@@ -1,6 +1,9 @@
 ## Change Log
 
-### v1.6.0 (2023/09/03 17:300)
+### v1.7.0 (2026/07/09)
+- fix: restore missing services on cached accessories for Homebridge 2
+
+### v1.6.0 (2023/09/03 17:30)
 - feature: add support for Shelly switches and dimmers
 
 ### v1.5.2 (2023/07/29 17:30)
